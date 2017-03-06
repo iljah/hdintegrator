@@ -45,7 +45,7 @@ def integrand(*args):
 		vel1, vel2 = args[args[-2]], args[args[-1]]
 	dimensions = len(args) - 2
 	if dimensions <= args[-2] or dimensions <= args[-1]:
-		exit('Too few dimension for calculating correlation between dimensions ' + str(args[-2]) + ' and ' + str(args[-1]))
+		exit('Too few dimensions for calculating correlation between dimensions ' + str(args[-2]) + ' and ' + str(args[-1]))
 
 	if dimensions == 1:
 		exit('At least 2 dimensions required')
