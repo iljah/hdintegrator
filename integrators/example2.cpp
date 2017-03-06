@@ -1,5 +1,5 @@
 /*
-Integrator program using gsl plain mc to do the work.
+Integrator program for N-sphere using gsl plain mc to do the work.
 
 Copyright 2017 Ilja Honkonen
 

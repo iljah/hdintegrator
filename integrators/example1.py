@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 '''
-Integrator program using scipy nquad to do the work.
+Integrator program for N-sphere using scipy nquad to do the work.
 
 Copyright 2017 Ilja Honkonen
 
