@@ -47,28 +47,20 @@ def integrand(*args):
 	if dimensions <= args[-2] or dimensions <= args[-1]:
 		exit('Too few dimensions for calculating correlation between dimensions ' + str(args[-2]) + ' and ' + str(args[-1]))
 
-	if dimensions == 1:
-		exit('At least 2 dimensions required')
+	if dimensions < 3:
+		exit('At least 3 dimensions required')
 
-	all_sum = 0.0
+	all_sum2 = 0.0
 	for i in range(dimensions):
-		all_sum += args[i]
+		all_sum2 += args[i]**2
 
-	non_boundary_term = 0
+	all_dx \
+		= (0.5 * args[ 0] * (args[1] - args[-1]) + args[1] - 2*args[ 0] + args[-1])**2 \
+		+ (0.5 * args[-1] * (args[0] - args[-2]) + args[0] - 2*args[-1] + args[-2])**2
 	for i in range(1, dimensions - 1):
-		non_boundary_term += (args[i] * (args[i + 1] - args[i - 1]))**2
+		all_dx += (0.5 * args[i] * (args[i+1] - args[i-1]) + args[i+1] - 2*args[i] + args[i-1])**2
 
-	return \
-		vel1 \
-		* vel2 \
-		* exp(
-			-(
-				(all_sum * (args[0] - args[dimensions - 1]))**2
-				+ (args[       0      ] * (all_sum + args[       1      ]))**2
-				+ (args[dimensions - 1] * (all_sum + args[dimensions - 2]))**2
-				+ non_boundary_term
-			)
-		)
+	return vel1 * vel2 * exp(-0.5 * all_sum2 - 0.5 * all_dx)
 
 
 '''
@@ -95,12 +87,6 @@ if __name__ == '__main__':
 		extents = []
 		for i in range(1, len(instr), 2):
 			extents.append((float(instr[i - 1]), float(instr[i])))
-		result, error1 = nquad(integrand, extents, args = [args.corr1, args.corr2])
-		normalization, error2 = nquad(integrand, extents, args = [-1, -1])
-		stdout.write(
-			'{:.15e} {:.15e}\n'.format(
-				result / normalization,
-				((error1 / result)**2 + (error2 / normalization)**2)**0.5
-			)
-		)
+		result, error = nquad(integrand, extents, args = [args.corr1, args.corr2])
+		stdout.write('{:.15e} {:.15e}\n'.format(result, error))
 		stdout.flush()

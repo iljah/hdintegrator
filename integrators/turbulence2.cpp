@@ -78,32 +78,24 @@ double integrand(double* x, size_t dimensions, void* params) {
 				return *(x + vel2_i);
 			}
 		}(),
-		all_sum = [x, dimensions](){
-			double sum = 0;
+		all_sum2 = [x, dimensions](){
+			double sum2 = 1;
 			for (size_t i = 0; i < dimensions; i++) {
-				sum += x[i];
+				sum2 *= std::exp(-0.5 * SQR(x[i]));
 			}
-			return sum;
+			return sum2;
 		}(),
-		non_boundary_term = [x, dimensions](){
-			double ret_val = 0;
+		all_dx = [x, dimensions](){
+			double dx
+				= std::exp(-0.5 * SQR(x[0] * (x[1] - x[dimensions - 1]) + x[1] - 2*x[0] + x[dimensions - 1]))
+				* std::exp(-0.5 * SQR(x[dimensions - 1] * (x[0] - x[dimensions - 2]) + x[0] - 2*x[dimensions - 1] + x[dimensions - 2]));
 			for (size_t i = 1; i < dimensions - 1; i++) {
-				ret_val += SQR(x[i] * (x[i + 1] - x[i - 1]));
+				dx *= std::exp(-0.5 * SQR(x[i] * (x[i+1] - x[i-1]) + x[i+1] - 2*x[i] + x[i-1]));
 			}
-			return ret_val;
+			return dx;
 		}();
 
-	return
-		vel1
-		* vel2
-		* std::exp(
-			-(
-				SQR(all_sum * (x[0] - x[dimensions - 1]))
-				+ SQR(x[       0      ] * (all_sum + x[       1      ]))
-				+ SQR(x[dimensions - 1] * (all_sum + x[dimensions - 2]))
-				+ non_boundary_term
-			)
-		);
+	return vel1 * vel2 * all_sum2 * all_dx;
 }
 
 
@@ -120,7 +112,7 @@ int main(int argc, char* argv[])
 	options.add_options()
 		("help", "Print help")
 		("calls",
-			boost::program_options::value<double>(&calls),
+			boost::program_options::value<double>(&calls)->required(),
 			"Number of calls to make when integrating")
 		("corr1",
 			boost::program_options::value<int>(&corr1),
@@ -224,7 +216,7 @@ int main(int argc, char* argv[])
 		std::array<int, 2> corrs{corr1, corr2};
 		function.params = corrs.data();
 
-		double result = 0, abserr1 = 0, normalization = 0, abserr2 = 0;
+		double result = 0, error = 0;
 		#if METHOD == 1
 		auto ret_val = gsl_monte_plain_integrate(
 		#elif METHOD == 2
@@ -240,38 +232,14 @@ int main(int argc, char* argv[])
 			rng,
 			state,
 			&result,
-			&abserr1
+			&error
 		);
 		if (ret_val != 0) {
 			std::cerr << "Integration failed." << std::endl;
 			return EXIT_FAILURE;
 		}
 
-		corrs[0] = corrs[1] = -1;
-		#if METHOD == 1
-		ret_val = gsl_monte_plain_integrate(
-		#elif METHOD == 2
-		ret_val = gsl_monte_miser_integrate(
-		#elif METHOD == 3
-		ret_val = gsl_monte_vegas_integrate(
-		#endif
-			&function,
-			mins.data(),
-			maxs.data(),
-			dimensions,
-			size_t(std::round(calls)),
-			rng,
-			state,
-			&normalization,
-			&abserr2
-		);
-		if (ret_val != 0) {
-			std::cerr << "Normalization failed." << std::endl;
-			return EXIT_FAILURE;
-		}
-		std::cout
-			<< result / normalization<< " "
-			<< std::sqrt(SQR(abserr1 / result) + SQR(abserr2 / normalization)) << std::endl;
+		std::cout << result << " " << error << std::endl;
 	}
 
 	if (not first_integration) {
