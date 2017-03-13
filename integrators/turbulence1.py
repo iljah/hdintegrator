@@ -30,13 +30,10 @@ from scipy.integrate import nquad
 Integrand for scipy nquad function.
 
 Calculates:
-velN * velM * exp(sum)
-where sum is:
-v[0]**2*(v[-1]-v[1])**2 + v[1]**2*(v[0]-v[2])**2 + ... + v[-1]**2*(v[0]-v[-2])**2
-with constraint:
-v[0]+v[1]+v[2]+...+v[-1] = 0
-and v[0] is replaced by other velocities so sum becomes:
-(v[1]+...+v[-1])**2*(v[-1]-v[1])**2 + v[1]**2...
+v[N] * v[M] * exp(-A - B)
+where A is v[0]**2 + v[1]**2 + ...
+and B is:
+0.5 * v[0] * (v[1] - v[-1]) + v[1] - 2*v[0] + v[-1] + 0.5  * v[1] * (v[2] ...
 '''
 def integrand(*args):
 	if args[-1] < 0 or args[-2] < 0:
@@ -65,6 +62,9 @@ def integrand(*args):
 
 '''
 Reads integration volume from stdin and prints the result to stdout.
+
+Input format, line by line:
+ignored v0min v0max v1min v1max ...
 '''
 if __name__ == '__main__':
 
@@ -85,7 +85,7 @@ if __name__ == '__main__':
 			break
 		instr = instr.strip().split()
 		extents = []
-		for i in range(1, len(instr), 2):
+		for i in range(2, len(instr), 2):
 			extents.append((float(instr[i - 1]), float(instr[i])))
 		result, error = nquad(integrand, extents, args = [args.corr1, args.corr2])
 		stdout.write('{:.15e} {:.15e}\n'.format(result, error))

@@ -101,25 +101,24 @@ double integrand(double* x, size_t dimensions, void* params) {
 
 /*
 Reads integration volume from stdin and prints the result to stdout.
+
+Input format, line by line:
+nr_calls v0min v0max v1min v1max ...
 */
 int main(int argc, char* argv[])
 {
 	int corr1 = 0, corr2 = 0;
-	double calls = 0;
 
 	boost::program_options::options_description
 		options("Usage: program_name [options], where options are");
 	options.add_options()
 		("help", "Print help")
-		("calls",
-			boost::program_options::value<double>(&calls)->required(),
-			"Number of calls to make when integrating")
 		("corr1",
-			boost::program_options::value<int>(&corr1),
-			"Number of first correlation dimension starting from 0")
+			boost::program_options::value<int>(&corr1)->required(),
+			"Number of first correlation dimension starting from 0, not calculated if < 0")
 		("corr2",
-			boost::program_options::value<int>(&corr2),
-			"Number of second correlation dimension starting from 0");
+			boost::program_options::value<int>(&corr2)->required(),
+			"Number of second correlation dimension starting from 0, not calculated if < 0");
 
 	boost::program_options::variables_map var_map;
 	try {
@@ -169,9 +168,11 @@ int main(int argc, char* argv[])
 	std::string line;
 	while (std::getline(std::cin, line)) {
 
+		double calls;
 		std::istringstream iss(line);
 		std::vector<double> mins, maxs;
 		double item;
+		iss >> calls;
 		while (iss >> item) {
 			mins.push_back(item);
 			if (iss >> item) {

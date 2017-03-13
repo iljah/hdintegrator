@@ -45,15 +45,16 @@ double integrand(double* x, size_t dim, void* /*params*/) {
 
 /*
 Reads integration volume from stdin and prints the result to stdout.
+
+Input format, line by line:
+nr_calls v0min v0max v1min v1max ...
 */
-int main(int argc, char* argv[])
+int main(int argc, char* /*argv*/[])
 {
-	if (argc != 2) {
-		std::cerr << "Invalid number of arguments: " << argc - 1 << " should be 1 (number of calls)" << std::endl;
+	if (argc != 1) {
+		std::cerr << "Invalid number of arguments: " << argc - 1 << " should be 0." << std::endl;
 		return EXIT_FAILURE;
 	}
-
-	const double calls = std::atof(argv[1]);
 
 	std::cout << std::setprecision(15) << std::scientific;
 
@@ -73,9 +74,10 @@ int main(int argc, char* argv[])
 	std::string line;
 	while (std::getline(std::cin, line)) {
 
+		double calls, item;
 		std::istringstream iss(line);
 		std::vector<double> mins, maxs;
-		double item;
+		iss >> calls;
 		while (iss >> item) {
 			mins.push_back(item);
 			if (iss >> item) {

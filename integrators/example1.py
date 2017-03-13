@@ -46,6 +46,9 @@ def integrand(*args):
 
 '''
 Reads integration volume from stdin and prints the result to stdout.
+
+Input format, line by line:
+nr_calls v0min v0max v1min v1max ...
 '''
 if __name__ == '__main__':
 
@@ -55,7 +58,7 @@ if __name__ == '__main__':
 			break
 		instr = instr.strip().split()
 		extents = []
-		for i in range(1, len(instr), 2):
+		for i in range(2, len(instr), 2):
 			extents.append((float(instr[i - 1]), float(instr[i])))
 		result, error = nquad(integrand, extents)
 		stdout.write('{:.15e} {:.15e}\n'.format(result, error))
