@@ -19,12 +19,33 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import argparse
-from shlex import split
+import shlex
 from subprocess import Popen, PIPE
 from sys import stdout
 
 from cell import cell
 from ndgrid import ndgrid
+
+
+'''
+Splits given cell splits times in given dimensions.
+
+ID of child cell is parent id * 2 + (0 or 1).
+'''
+def split(cell, splits, dimensions, grid):
+	# TODO logging
+	cells_to_split = [cell]
+	new_cells_to_split = []
+	for dim in dimensions:
+		for i in range(splits):
+			for c_to_split in cells_to_split:
+				old_id = c_to_split.data['id']
+				for new_cell in grid.split(c_to_split, dim):
+					new_cells_to_split.append(new_cell)
+				new_cells_to_split[-2].data['id'] = old_id * 2
+				new_cells_to_split[-1].data['id'] = old_id * 2 + 1
+			cells_to_split = new_cells_to_split
+			new_cells_to_split = []
 
 
 if __name__ == '__main__':
@@ -67,6 +88,13 @@ if __name__ == '__main__':
 		help = 'Arguments to pass to integrator program, given as one string (e.g. quoted) which are passed on to integrator after splitting with shlex.split'
 	)
 	parser.add_argument(
+		'--prerefine',
+		type = int,
+		default = 0,
+		metavar = 'S',
+		help = 'Split initial cell S times in every dimension before integrating'
+	)
+	parser.add_argument(
 		'--calls',
 		type = float,
 		default = 1e6,
@@ -102,8 +130,10 @@ if __name__ == '__main__':
 	# prepare integrator program
 	arg_list = [args.integrator]
 	if args.args != None:
-		arg_list += split(args.args)
+		arg_list += shlex.split(args.args)
 	integrator = Popen(arg_list, stdin = PIPE, stdout = PIPE, universal_newlines = True, bufsize = 1)
+
+	dimensions = list(range(args.dimensions))
 
 	# initialize grid for integration
 	c = cell()
@@ -111,9 +141,11 @@ if __name__ == '__main__':
 	c.data['converged'] = False
 	c.data['value'] = None
 	c.data['error'] = None
-	for i in range(args.dimensions):
+	for i in dimensions:
 		c.set_extent(i, args.min_extent, args.max_extent)
 	grid = ndgrid(c)
+
+	split(c, args.prerefine, dimensions, grid)
 
 	done = False
 	while not done:
@@ -125,8 +157,6 @@ if __name__ == '__main__':
 				continue
 			else:
 				done = False
-
-			dimensions = sorted(c.get_dimensions())
 
 			if c.data['value'] == None:
 
@@ -171,21 +201,7 @@ if __name__ == '__main__':
 				if args.verbose:
 					print(", didn't converge, splitting into cells ", end = '')
 				c.data['value'] = c.data['error'] = None
-				cells_to_split = [c]
-				new_cs_to_split = []
-				for dim in dimensions:
-					if args.verbose:
-						print('  (' + str(dim) + ')', end = ' ')
-					for c_to_split in cells_to_split:
-						old_id = c_to_split.data['id']
-						for new_cell in grid.split(c_to_split, dim):
-							new_cs_to_split.append(new_cell)
-						new_cs_to_split[-2].data['id'] = old_id * 2
-						new_cs_to_split[-1].data['id'] = old_id * 2 + 1
-						if args.verbose:
-							print(old_id * 2, old_id * 2 + 1, end = ' ')
-					cells_to_split = new_cs_to_split
-					new_cs_to_split = []
+				split(c, 1, dimensions, grid)
 				if args.verbose:
 					print()
 
