@@ -48,10 +48,12 @@ Selects which method to use.
 #include "gsl/gsl_monte_miser.h"
 #elif METHOD == 3
 #include "gsl/gsl_monte_vegas.h"
+#else
+#error You must choose a method when compiling (e.g. -DMETHOD=1)
 #endif
 
 
-template<class T> T SQR(const T& t)
+template<class T> constexpr T SQR(const T& t)
 {
 	return t*t;
 }
@@ -79,23 +81,23 @@ double integrand(double* x, size_t dimensions, void* params) {
 			}
 		}(),
 		all_sum2 = [x, dimensions](){
-			double sum2 = 1;
+			double sum2 = 0;
 			for (size_t i = 0; i < dimensions; i++) {
-				sum2 *= std::exp(-0.5 * SQR(x[i]));
+				sum2 += SQR(x[i]);
 			}
 			return sum2;
 		}(),
 		all_dx = [x, dimensions](){
 			double dx
-				= std::exp(-0.5 * SQR(x[0] * (x[1] - x[dimensions - 1]) + x[1] - 2*x[0] + x[dimensions - 1]))
-				* std::exp(-0.5 * SQR(x[dimensions - 1] * (x[0] - x[dimensions - 2]) + x[0] - 2*x[dimensions - 1] + x[dimensions - 2]));
+				= SQR(-0.5 * x[0] * (x[1] - x[dimensions - 1]) + x[1] - 2*x[0] + x[dimensions - 1])
+				+ SQR(-0.5 * x[dimensions - 1] * (x[0] - x[dimensions - 2]) + x[0] - 2*x[dimensions - 1] + x[dimensions - 2]);
 			for (size_t i = 1; i < dimensions - 1; i++) {
-				dx *= std::exp(-0.5 * SQR(x[i] * (x[i+1] - x[i-1]) + x[i+1] - 2*x[i] + x[i-1]));
+				dx += SQR(-0.5 * x[i] * (x[i + 1] - x[i - 1]) + x[i + 1] - 2*x[i] + x[i - 1]);
 			}
 			return dx;
 		}();
 
-	return vel1 * vel2 * all_sum2 * all_dx;
+	return vel1 * vel2 * exp(-0.5 * (all_sum2 + all_dx));
 }
 
 
