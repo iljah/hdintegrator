@@ -31,6 +31,7 @@ Selects which method to use.
 
 
 #include "algorithm"
+#include "array"
 #include "cmath"
 #include "cstdlib"
 #include "iomanip"
