@@ -88,5 +88,5 @@ if __name__ == '__main__':
 		for i in range(2, len(instr), 2):
 			extents.append((float(instr[i - 1]), float(instr[i])))
 		result, error = nquad(integrand, extents, args = [args.corr1, args.corr2])
-		stdout.write('{:.15e} {:.15e}\n'.format(result, error))
+		stdout.write('{:.15e} {:.15e} -1\n'.format(result, error))
 		stdout.flush()

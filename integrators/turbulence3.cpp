@@ -199,7 +199,7 @@ int main(int argc, char* argv[])
 			return EXIT_FAILURE;
 		}
 
-		std::cout << result << " " << abserr << std::endl;
+		std::cout << result << " " << abserr << " -1" << std::endl;
 	}
 
 	return EXIT_SUCCESS;

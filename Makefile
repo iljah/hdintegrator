@@ -6,9 +6,10 @@ all: \
 	integrators/turbulence3_hcubature \
 	integrators/turbulence3_pcubature \
 	integrators/turbulence3_hcubature_v \
-	integrators/turbulence3_pcubature_v
+	integrators/turbulence3_pcubature_v \
+	integrators/turbulence4
 
-COMP = g++ -std=c++11 -O3 -march=native -W -Wall -Wextra -Wpedantic $< -o $@
+COMP = g++ -std=c++17 -O3 -march=native -W -Wall -Wextra -Wpedantic $< -o $@
 
 integrators/example2: integrators/example2.cpp Makefile
 	$(COMP) -lgsl -lgslcblas
@@ -34,6 +35,9 @@ integrators/turbulence3_hcubature_v: integrators/turbulence3.cpp Makefile
 integrators/turbulence3_pcubature_v: integrators/turbulence3.cpp Makefile
 	$(COMP) -DVECTORIZE -DPCUBATURE -lpcubature -lboost_program_options
 
+integrators/turbulence4: integrators/turbulence4.cpp Makefile
+	$(COMP) -I $(HOME)/ohjelmat/cxx-prettyprint -lboost_program_options
+
 c: clean
 clean:
-	rm -f integrators/example2 integrators/turbulence2_plain integrators/turbulence2_miser integrators/turbulence2_vegas integrators/turbulence3_hcubature integrators/turbulence3_pcubature integrators/turbulence3_hcubature_v integrators/turbulence3_pcubature_v
+	rm -f integrators/example2 integrators/turbulence2_plain integrators/turbulence2_miser integrators/turbulence2_vegas integrators/turbulence3_hcubature integrators/turbulence3_pcubature integrators/turbulence3_hcubature_v integrators/turbulence3_pcubature_v integrators/turbulence4

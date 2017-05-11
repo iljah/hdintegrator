@@ -243,7 +243,7 @@ int main(int argc, char* argv[])
 			return EXIT_FAILURE;
 		}
 
-		std::cout << result << " " << error << std::endl;
+		std::cout << result << " " << error << " -1" << std::endl;
 	}
 
 	if (not first_integration) {

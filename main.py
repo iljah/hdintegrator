@@ -172,8 +172,8 @@ if __name__ == '__main__':
 				integrator.stdin.flush()
 				stdout.flush()
 
-				value, error = integrator.stdout.readline().strip().split()
-				c.data['value'], c.data['error'] = float(value), float(error)
+				value, error, split_dim = integrator.stdout.readline().strip().split()
+				c.data['value'], c.data['error'], split_dim = float(value), float(error), int(split_dim)
 
 			# check convergence
 			integrator.stdin.write('{:.15e} '.format(args.calls * args.convergence_factor))
@@ -182,8 +182,8 @@ if __name__ == '__main__':
 			integrator.stdin.write('\n')
 			integrator.stdin.flush()
 
-			new_value, new_error = integrator.stdout.readline().strip().split()
-			new_value, new_error = float(new_value), float(new_error)
+			new_value, new_error, new_split_dim = integrator.stdout.readline().strip().split()
+			new_value, new_error, new_split_dim = float(new_value), float(new_error), int(new_split_dim)
 
 			try:
 				convg_fact = max(abs(c.data['value']), abs(new_value)) / min(abs(c.data['value']), abs(new_value))
