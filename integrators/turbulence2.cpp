@@ -37,6 +37,7 @@ Selects which method to use.
 #include "iomanip"
 #include "ios"
 #include "iostream"
+#include "iterator"
 #include "sstream"
 #include "string"
 #include "vector"
@@ -64,21 +65,36 @@ template<class T> constexpr T SQR(const T& t)
 Same as integrand in example1.py
 */
 double integrand(double* x, size_t dimensions, void* params) {
+	const auto
+		vel1_i = *(static_cast<int*>(params) + 0),
+		vel2_i = *(static_cast<int*>(params) + 1);
+
+	if (vel1_i >= int(dimensions) or vel2_i >= int(dimensions)) {
+		std::cerr << __FILE__ "(" << __LINE__ << ")" << std::endl;
+		abort();
+	}
+
+	const bool correlate = [&](){
+		if (vel1_i < 0 or vel2_i < 0) {
+			return false;
+		} else {
+			return true;
+		}
+	}();
+
 	const double
-		vel1 = [x, params]{
-			const auto vel1_i = *(static_cast<int*>(params) + 0);
-			if (vel1_i < 0) {
-				return 1.0;
-			} else {
+		vel1 = [&]{
+			if (correlate) {
 				return *(x + vel1_i);
+			} else {
+				return 1.0;
 			}
 		}(),
-		vel2 = [x, params]{
-			const auto vel2_i = *(static_cast<int*>(params) + 1);
-			if (vel2_i < 0) {
-				return 1.0;
-			} else {
+		vel2 = [&]{
+			if (correlate) {
 				return *(x + vel2_i);
+			} else {
+				return 1.0;
 			}
 		}(),
 		all_sum2 = [x, dimensions](){
@@ -168,6 +184,8 @@ int main(int argc, char* argv[])
 	decltype(gsl_monte_vegas_alloc(0)) state{};
 	#endif
 
+	std::vector<int> split_dims;
+
 	std::string line;
 	while (std::getline(std::cin, line)) {
 
@@ -220,13 +238,14 @@ int main(int argc, char* argv[])
 		std::array<int, 2> corrs{corr1, corr2};
 		function.params = corrs.data();
 
+		std::vector<int> split_dims(dimensions);
 		double result = 0, error = 0;
 		#if METHOD == 1
-		auto ret_val = gsl_monte_plain_integrate(
+		auto ret_val = gsl_monte_plain_integrate2(
 		#elif METHOD == 2
-		auto ret_val = gsl_monte_miser_integrate(
+		auto ret_val = gsl_monte_miser_integrate2(
 		#elif METHOD == 3
-		auto ret_val = gsl_monte_vegas_integrate(
+		auto ret_val = gsl_monte_vegas_integrate2(
 		#endif
 			&function,
 			mins.data(),
@@ -236,14 +255,16 @@ int main(int argc, char* argv[])
 			rng,
 			state,
 			&result,
-			&error
+			&error,
+			split_dims.data()
 		);
 		if (ret_val != 0) {
 			std::cerr << "Integration failed." << std::endl;
 			return EXIT_FAILURE;
 		}
 
-		std::cout << result << " " << error << " -1" << std::endl;
+		const auto max_elem = std::max_element(split_dims.cbegin(), split_dims.cend());
+		std::cout << result << " " << error << " " << std::distance(split_dims.cbegin(), max_elem) << std::endl;
 	}
 
 	if (not first_integration) {

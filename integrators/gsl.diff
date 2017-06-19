@@ -1,0 +1,242 @@
+diff -ur ../../paketit/gsl-2.3/monte/gsl_monte_miser.h ./gsl_monte_miser.h
+--- ../../paketit/gsl-2.3/monte/gsl_monte_miser.h	2015-11-03 18:21:55.000000000 +0200
++++ ./gsl_monte_miser.h	2017-06-05 09:27:30.295371675 +0300
+@@ -65,12 +65,12 @@
+   size_t * hits_r;
+ } gsl_monte_miser_state; 
+ 
+-int gsl_monte_miser_integrate(gsl_monte_function * f, 
++int gsl_monte_miser_integrate2(gsl_monte_function * f, 
+                               const double xl[], const double xh[], 
+                               size_t dim, size_t calls, 
+                               gsl_rng *r, 
+                               gsl_monte_miser_state* state,
+-                              double *result, double *abserr);
++                              double *result, double *abserr, int* split_dims);
+ 
+ gsl_monte_miser_state* gsl_monte_miser_alloc(size_t dim);
+ 
+diff -ur ../../paketit/gsl-2.3/monte/gsl_monte_plain.h ./gsl_monte_plain.h
+--- ../../paketit/gsl-2.3/monte/gsl_monte_plain.h	2015-11-03 18:21:55.000000000 +0200
++++ ./gsl_monte_plain.h	2017-06-05 10:51:50.408564823 +0300
+@@ -46,13 +46,13 @@
+ } gsl_monte_plain_state;
+ 
+ int
+-gsl_monte_plain_integrate (const gsl_monte_function * f,
++gsl_monte_plain_integrate2 (const gsl_monte_function * f,
+                            const double xl[], const double xu[],
+                            const size_t dim,
+                            const size_t calls, 
+                            gsl_rng * r,
+                            gsl_monte_plain_state * state,
+-                           double *result, double *abserr);
++                           double *result, double *abserr, int* split_dims);
+ 
+ gsl_monte_plain_state* gsl_monte_plain_alloc(size_t dim);
+ 
+diff -ur ../../paketit/gsl-2.3/monte/gsl_monte_vegas.h ./gsl_monte_vegas.h
+--- ../../paketit/gsl-2.3/monte/gsl_monte_vegas.h	2015-11-03 18:21:55.000000000 +0200
++++ ./gsl_monte_vegas.h	2017-06-05 11:07:19.350851286 +0300
+@@ -88,12 +88,12 @@
+ 
+ } gsl_monte_vegas_state;
+ 
+-int gsl_monte_vegas_integrate(gsl_monte_function * f, 
++int gsl_monte_vegas_integrate2(gsl_monte_function * f, 
+                               double xl[], double xu[], 
+                               size_t dim, size_t calls,
+                               gsl_rng * r,
+                               gsl_monte_vegas_state *state,
+-                              double* result, double* abserr);
++                              double* result, double* abserr, int* split_dims);
+ 
+ gsl_monte_vegas_state* gsl_monte_vegas_alloc(size_t dim);
+ 
+diff -ur ../../paketit/gsl-2.3/monte/miser.c ./miser.c
+--- ../../paketit/gsl-2.3/monte/miser.c	2015-11-03 18:21:55.000000000 +0200
++++ ./miser.c	2017-06-05 10:03:35.951701735 +0300
+@@ -50,12 +50,12 @@
+ 
+ 
+ int
+-gsl_monte_miser_integrate (gsl_monte_function * f,
++gsl_monte_miser_integrate2 (gsl_monte_function * f,
+                            const double xl[], const double xu[],
+                            size_t dim, size_t calls,
+                            gsl_rng * r,
+                            gsl_monte_miser_state * state,
+-                           double *result, double *abserr)
++                           double *result, double *abserr, int* split_dims)
+ {
+   size_t n, estimate_calls, calls_l, calls_r;
+   const size_t min_calls = state->min_calls;
+@@ -223,6 +223,8 @@
+       i_bisect = gsl_rng_uniform_int (r, dim);
+     }
+ 
++  (*(split_dims + i_bisect))++;
++
+   xbi_l = xl[i_bisect];
+   xbi_m = xmid[i_bisect];
+   xbi_r = xu[i_bisect];
+@@ -263,9 +265,9 @@
+ 
+     xu_tmp[i_bisect] = xbi_m;
+ 
+-    status = gsl_monte_miser_integrate (f, xl, xu_tmp,
++    status = gsl_monte_miser_integrate2 (f, xl, xu_tmp,
+                                         dim, calls_l, r, state,
+-                                        &res_l, &err_l);
++                                        &res_l, &err_l, split_dims);
+     free (xu_tmp);
+ 
+     if (status != GSL_SUCCESS)
+@@ -293,9 +295,9 @@
+ 
+     xl_tmp[i_bisect] = xbi_m;
+ 
+-    status = gsl_monte_miser_integrate (f, xl_tmp, xu,
++    status = gsl_monte_miser_integrate2 (f, xl_tmp, xu,
+                                         dim, calls_r, r, state,
+-                                        &res_r, &err_r);
++                                        &res_r, &err_r, split_dims);
+     free (xl_tmp);
+ 
+     if (status != GSL_SUCCESS)
+diff -ur ../../paketit/gsl-2.3/monte/plain.c ./plain.c
+--- ../../paketit/gsl-2.3/monte/plain.c	2015-11-03 18:21:55.000000000 +0200
++++ ./plain.c	2017-06-05 11:01:39.869473641 +0300
+@@ -28,13 +28,13 @@
+ #include <gsl/gsl_monte_plain.h>
+ 
+ int
+-gsl_monte_plain_integrate (const gsl_monte_function * f,
++gsl_monte_plain_integrate2 (const gsl_monte_function * f,
+                            const double xl[], const double xu[],
+                            const size_t dim,
+                            const size_t calls,
+                            gsl_rng * r,
+                            gsl_monte_plain_state * state,
+-                           double *result, double *abserr)
++                           double *result, double *abserr, int* split_dims)
+ {
+   double vol, m = 0, q = 0;
+   double *x = state->x;
+@@ -68,6 +68,12 @@
+       vol *= xu[i] - xl[i];
+     }
+ 
++  double* quad_avgs = (double*) calloc(2*dim, sizeof(double));
++  int* quad_nr = (int*) calloc(2*dim, sizeof(int));
++  if (quad_avgs == NULL || quad_nr == NULL) {
++    return GSL_FAILURE;
++  }
++
+   for (n = 0; n < calls; n++)
+     {
+       /* Choose a random point in the integration region */
+@@ -80,6 +86,16 @@
+       {
+         double fval = GSL_MONTE_FN_EVAL (f, x);
+ 
++        for (unsigned int d = 0; d < dim; d++) {
++          if (x[d] - xl[d] < xu[d] - x[d]) {
++            quad_avgs[d] += fval;
++            quad_nr[d]++;
++          } else {
++            quad_avgs[d+1] += fval;
++            quad_nr[d+1]++;
++          }
++        }
++
+         /* recurrence for mean and variance */
+ 
+         double d = fval - m;
+@@ -99,6 +115,19 @@
+       *abserr = vol * sqrt (q / (calls * (calls - 1.0)));
+     }
+ 
++  double max_diff = -1;
++  int max_diff_d = 0;
++  for (size_t d = 0; d < dim; d++) {
++    quad_avgs[d] /= quad_nr[d];
++    quad_avgs[d+1] /= quad_nr[d+1];
++    const double diff = abs(quad_avgs[d] - quad_avgs[d+1]);
++    if (max_diff < diff) {
++      max_diff = diff;
++      max_diff_d = d;
++    }
++  }
++  (*(split_dims + max_diff_d))++;
++
+   return GSL_SUCCESS;
+ }
+ 
+diff -ur ../../paketit/gsl-2.3/monte/vegas.c ./vegas.c
+--- ../../paketit/gsl-2.3/monte/vegas.c	2015-11-03 18:21:55.000000000 +0200
++++ ./vegas.c	2017-06-05 11:57:39.592636992 +0300
+@@ -106,12 +106,12 @@
+ static void print_grid (gsl_monte_vegas_state * state, unsigned long dim);
+ 
+ int
+-gsl_monte_vegas_integrate (gsl_monte_function * f,
++gsl_monte_vegas_integrate2 (gsl_monte_function * f,
+                            double xl[], double xu[],
+                            size_t dim, size_t calls,
+                            gsl_rng * r,
+                            gsl_monte_vegas_state * state,
+-                           double *result, double *abserr)
++                           double *result, double *abserr, int* split_dims)
+ {
+   double cum_int, cum_sig;
+   size_t i, k, it;
+@@ -216,6 +216,12 @@
+   cum_int = 0.0;
+   cum_sig = 0.0;
+ 
++  double* quad_avgs = (double*) calloc(2*dim, sizeof(double));
++  int* quad_nr = (int*) calloc(2*dim, sizeof(int));
++  if (quad_avgs == NULL || quad_nr == NULL) {
++    return GSL_FAILURE;
++  }
++
+   for (it = 0; it < state->iterations; it++)
+     {
+       double intgrl = 0.0, intgrl_sq = 0.0;
+@@ -245,6 +251,16 @@
+ 
+               fval = jacbin * bin_vol * GSL_MONTE_FN_EVAL (f, x);
+ 
++              for (unsigned int d = 0; d < dim; d++) {
++                if (x[d] - xl[d] < xu[d] - x[d]) {
++                  quad_avgs[d] += fval;
++                  quad_nr[d]++;
++                } else {
++                  quad_avgs[d+1] += fval;
++                  quad_nr[d+1]++;
++                }
++              }
++
+               /* recurrence for mean and variance (sum of squares) */
+ 
+               {
+@@ -373,6 +389,19 @@
+   *result = cum_int;
+   *abserr = cum_sig;
+ 
++  double max_diff = -1;
++  int max_diff_d = 0;
++  for (size_t d = 0; d < dim; d++) {
++    quad_avgs[d] /= quad_nr[d];
++    quad_avgs[d+1] /= quad_nr[d+1];
++    const double diff = abs(quad_avgs[d] - quad_avgs[d+1]);
++    if (max_diff < diff) {
++      max_diff = diff;
++      max_diff_d = d;
++    }
++  }
++  (*(split_dims + max_diff_d))++;
++
+   return GSL_SUCCESS;
+ }

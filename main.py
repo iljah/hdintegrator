@@ -85,7 +85,7 @@ if __name__ == '__main__':
 	)
 	parser.add_argument(
 		'--args',
-		help = 'Arguments to pass to integrator program, given as one string (e.g. quoted) which are passed on to integrator after splitting with shlex.split'
+		help = 'Arguments to pass to integrator program, given as one string (e.g. --args "-a b -c d") which are passed on to integrator after splitting with shlex.split'
 	)
 	parser.add_argument(
 		'--prerefine',
@@ -102,7 +102,7 @@ if __name__ == '__main__':
 	)
 	parser.add_argument(
 		'--calls-factor',
-		metavar = 'A',
+		metavar = 'F',
 		type = float,
 		default = 2,
 		help = 'Increase number of calls by factor F when checking for convergence'
@@ -112,7 +112,7 @@ if __name__ == '__main__':
 		metavar = 'O',
 		type = float,
 		default = 1.05,
-		help = 'Consider result converged when using A times more calls gives a result within factor O.'
+		help = 'Consider result converged when using F times more calls gives a result within factor O.'
 	)
 	parser.add_argument(
 		'--convergence-diff',
@@ -162,11 +162,11 @@ if __name__ == '__main__':
 
 				extents = [c.get_extent(dim) for dim in dimensions]
 				if args.verbose:
-					print('Initial processing of cell', c.data['id'], 'with', len(extents), 'dimensions:', end = ' ')
+					print('Processing cell', c.data['id'], end = ': ')
 				integrator.stdin.write('{:.15e} '.format(args.calls))
 				for extent in extents:
-					if args.verbose:
-						print(extent[0], extent[1], end = ' ')
+					#if args.verbose:
+						#print(extent[0], extent[1], end = ' ')
 					integrator.stdin.write('{:.15e} {:.15e} '.format(extent[0], extent[1]))
 				integrator.stdin.write('\n')
 				integrator.stdin.flush()
@@ -195,15 +195,13 @@ if __name__ == '__main__':
 
 			if convg_fact < args.convergence_factor or convg_diff < args.convergence_diff:
 				if args.verbose:
-					print(', converged')
+					print('converged')
 				c.data['converged'] = True
 			else:
 				if args.verbose:
-					print(", didn't converge, splitting into cells ", end = '')
+					print("didn't converge, splitting along dimension", new_split_dim)
 				c.data['value'] = c.data['error'] = None
-				split(c, 1, dimensions, grid)
-				if args.verbose:
-					print()
+				split(c, 1, [new_split_dim], grid)
 
 
 value, error = 0.0, 0.0
