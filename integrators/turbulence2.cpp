@@ -45,10 +45,13 @@ Selects which method to use.
 #include "boost/program_options.hpp"
 
 #if METHOD == 1
+#include "gsl_monte_plain2.h"
 #include "gsl/gsl_monte_plain.h"
 #elif METHOD == 2
+#include "gsl_monte_miser2.h"
 #include "gsl/gsl_monte_miser.h"
 #elif METHOD == 3
+#include "gsl_monte_vegas2.h"
 #include "gsl/gsl_monte_vegas.h"
 #else
 #error You must choose a method when compiling (e.g. -DMETHOD=1)

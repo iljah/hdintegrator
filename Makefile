@@ -14,14 +14,14 @@ COMP = g++ -std=c++17 -O3 -march=native -W -Wall -Wextra -Wpedantic $< -o $@
 integrators/example2: integrators/example2.cpp Makefile
 	$(COMP) -lgsl -lgslcblas
 
-integrators/turbulence2_plain: integrators/turbulence2.cpp Makefile
-	$(COMP) -DMETHOD=1 -lgsl -lgslcblas -lboost_program_options
+integrators/turbulence2_plain: integrators/turbulence2.cpp integrators/gsl/plain2.c Makefile
+	$(COMP) integrators/gsl/plain2.c -DMETHOD=1 -I integrators/gsl -lgsl -lgslcblas -lboost_program_options
 
-integrators/turbulence2_miser: integrators/turbulence2.cpp Makefile
-	$(COMP) -DMETHOD=2 -lgsl -lgslcblas -lboost_program_options
+integrators/turbulence2_miser: integrators/turbulence2.cpp integrators/gsl/miser2.c Makefile
+	$(COMP) integrators/gsl/miser2.c -DMETHOD=2 -I integrators/gsl -lgsl -lgslcblas -lboost_program_options
 
 integrators/turbulence2_vegas: integrators/turbulence2.cpp Makefile
-	$(COMP) -DMETHOD=3 -lgsl -lgslcblas -lboost_program_options
+	$(COMP) integrators/gsl/vegas2.c -DMETHOD=3 -I integrators/gsl -lgsl -lgslcblas -lboost_program_options
 
 integrators/turbulence3_hcubature: integrators/turbulence3.cpp Makefile
 	$(COMP) -lhcubature -lboost_program_options
