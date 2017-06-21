@@ -111,7 +111,7 @@ if __name__ == '__main__':
 		'--convergence-factor',
 		metavar = 'O',
 		type = float,
-		default = 1.05,
+		default = 1.01,
 		help = 'Consider result converged when using F times more calls gives a result within factor O.'
 	)
 	parser.add_argument(
@@ -119,7 +119,14 @@ if __name__ == '__main__':
 		metavar = 'D',
 		type = float,
 		default = 1e-3,
-		help = 'Consider result converged when using A times more calls gives a result within difference D.'
+		help = 'Consider result converged when using F times more calls gives a result within difference D.'
+	)
+	parser.add_argument(
+		'--min-value',
+		metavar = 'M',
+		type = float,
+		default = 1e-3,
+		help = 'Consider result converged when using F times more calls gives a result less than M.'
 	)
 
 	args = parser.parse_args()
