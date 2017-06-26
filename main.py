@@ -126,7 +126,7 @@ if __name__ == '__main__':
 		metavar = 'M',
 		type = float,
 		default = 1e-3,
-		help = 'Consider result converged when using F times more calls gives a result less than M.'
+		help = 'Consider result converged when using F times more calls gives an absolute result less than M.'
 	)
 
 	args = parser.parse_args()
@@ -200,7 +200,11 @@ if __name__ == '__main__':
 			c.data['value'] = new_value
 			c.data['error'] = new_error
 
-			if convg_fact < args.convergence_factor or convg_diff < args.convergence_diff:
+			if \
+				convg_fact < args.convergence_factor \
+				or convg_diff < args.convergence_diff \
+				or abs(new_value) < args.min_value \
+			:
 				if args.verbose:
 					print('converged')
 				c.data['converged'] = True
