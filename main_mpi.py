@@ -81,9 +81,15 @@ if __name__ == '__main__':
 
 	parser = argparse.ArgumentParser(
 		description = 'Integrate a mathematical function',
-		formatter_class = argparse.ArgumentDefaultsHelpFormatter
+		formatter_class = argparse.ArgumentDefaultsHelpFormatter,
+		add_help = False
 	)
 
+	parser.add_argument(
+		'-h', '--help',
+		action = 'store_true',
+		help = 'Show this help message and exit'
+	)
 	parser.add_argument(
 		'--verbose',
 		action = 'store_true',
@@ -164,6 +170,12 @@ if __name__ == '__main__':
 		print('Arguments parsed')
 		stdout.flush()
 
+	if args.help:
+		if rank == 0:
+			parser.print_help()
+			stdout.flush()
+		exit()
+
 	if args.dimensions < 1:
 		if rank == 0:
 			print('Number of dimensions must be at least 1')
@@ -197,19 +209,22 @@ if __name__ == '__main__':
 		cells_to_process = [c]
 
 		split(c, args.prerefine, dimensions, grid)
-		print('Grid initialized by rank', rank)
-		stdout.flush()
+		if args.verbose:
+			print('Grid initialized by rank', rank)
+			stdout.flush()
 
 	if rank > 0:
 
 		while True:
-			print('Rank', rank, 'waiting for work')
-			stdout.flush()
+			if args.verbose:
+				print('Rank', rank, 'waiting for work')
+				stdout.flush()
 
 			work_item = comm.recv(source = 0, tag = 1)
 			if work_item.cell_id == None:
-				print('Rank', rank, 'exiting')
-				stdout.flush()
+				if args.verbose:
+					print('Rank', rank, 'exiting')
+					stdout.flush()
 				exit()
 
 			if args.verbose:
@@ -260,8 +275,9 @@ if __name__ == '__main__':
 				work_item.value = work_item.error = None
 				work_item.split_dim = new_split_dim
 
-			print('Rank', rank, 'returning work')
-			stdout.flush()
+			if args.verbose:
+				print('Rank', rank, 'returning work')
+				stdout.flush()
 			comm.send(obj = work_item, dest = 0, tag = 1)
 
 	else: # rank == 0
@@ -270,8 +286,10 @@ if __name__ == '__main__':
 		for work_tracker in work_trackers:
 			work_tracker.processing = False
 			work_tracker.item = Work_Item()
-		print('Number of work item slots:', len(work_trackers))
-		stdout.flush()
+
+		if args.verbose:
+			print('Number of work item slots:', len(work_trackers))
+			stdout.flush()
 
 		while True:
 			sleep(0.1)
@@ -297,9 +315,9 @@ if __name__ == '__main__':
 						work_trackers[proc].item.converged = False
 						work_trackers[proc].item.cell_id = c.data['id']
 						work_trackers[proc].item.volume = [c.get_extent(dim) for dim in dimensions]
-						#if args.verbose:
-						print('Sending cell', c.data['id'], 'for processing to rank', proc + 1)
-						stdout.flush()
+						if args.verbose:
+							print('Sending cell', c.data['id'], 'for processing to rank', proc + 1)
+							stdout.flush()
 						comm.send(obj = work_trackers[proc].item, dest = proc + 1, tag = 1)
 						break
 
@@ -311,8 +329,9 @@ if __name__ == '__main__':
 						work_trackers[proc].processing = False
 						work_trackers[proc].item = comm.recv(source = proc + 1, tag = 1)
 						cell_id = work_trackers[proc].item.cell_id
-						print('Received result for cell', cell_id, 'from process', proc + 1)
-						stdout.flush()
+						if args.verbose:
+							print('Received result for cell', cell_id, 'from process', proc + 1)
+							stdout.flush()
 						found = False
 						for c in grid.get_cells():
 							if c.data['id'] == cell_id:
@@ -333,8 +352,9 @@ if __name__ == '__main__':
 								c.data['error'] = work_trackers[proc].item.error
 								split_dim = work_trackers[proc].item.split_dim
 								if not c.data['converged']:
-									print("Cell didn't converge, splitting along dimension", split_dim)
-									stdout.flush()
+									if args.verbose:
+										print("Cell didn't converge, splitting along dimension", split_dim)
+										stdout.flush()
 									split(c, 1, [split_dim], grid)
 									work_left += 2
 								break
