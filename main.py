@@ -172,8 +172,6 @@ if __name__ == '__main__':
 					print('Processing cell', c.data['id'], end = ': ')
 				integrator.stdin.write('{:.15e} '.format(args.calls))
 				for extent in extents:
-					#if args.verbose:
-						#print(extent[0], extent[1], end = ' ')
 					integrator.stdin.write('{:.15e} {:.15e} '.format(extent[0], extent[1]))
 				integrator.stdin.write('\n')
 				integrator.stdin.flush()
