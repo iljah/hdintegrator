@@ -28,6 +28,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "string"
 #include "vector"
 
+#include "gsl_monte_plain2.h"
 #include "gsl/gsl_monte_plain.h"
 
 
@@ -104,8 +105,9 @@ int main(int argc, char* /*argv*/[])
 		dimensions = mins.size();
 
 		function.dim = dimensions;
+		std::vector<int> split_dims(dimensions);
 		double result = 0, abserr = 0;
-		const auto ret_val = gsl_monte_plain_integrate(
+		const auto ret_val = gsl_monte_plain_integrate2(
 			&function,
 			mins.data(),
 			maxs.data(),
@@ -114,13 +116,15 @@ int main(int argc, char* /*argv*/[])
 			rng,
 			state,
 			&result,
-			&abserr
+			&abserr,
+			split_dims.data()
 		);
 		if (ret_val != 0) {
 			std::cerr << "Integration failed." << std::endl;
 			return EXIT_FAILURE;
 		}
-		std::cout << result << " " << abserr << std::endl;
+		const auto max_elem = std::max_element(split_dims.cbegin(), split_dims.cend());
+		std::cout << result << " " << abserr << " " << std::distance(split_dims.cbegin(), max_elem) << std::endl;
 	}
 
 	if (not first_integration) {
