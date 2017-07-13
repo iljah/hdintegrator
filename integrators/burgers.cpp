@@ -280,7 +280,11 @@ int main(int argc, char* argv[])
 
 		function.dim = dimensions;
 
-		Integrand_Params params{corr1, corr2, nx, nt};
+		Integrand_Params params;
+		params.corr1 = corr1;
+		params.corr2 = corr2;
+		params.nx = nx;
+		params.nt = nt;
 		function.params = &params;
 
 		std::vector<int> split_dims(dimensions);
