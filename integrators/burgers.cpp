@@ -39,6 +39,7 @@ Selects which method to use.
 #include "iostream"
 #include "iterator"
 #include "sstream"
+#include "stdexcept"
 #include "string"
 #include "vector"
 
@@ -64,21 +65,33 @@ template<class T> constexpr T SQR(const T& t)
 }
 
 
-/*
-Same as integrand in example1.py
-*/
-double integrand(double* x, size_t dimensions, void* params) {
-	const auto
-		vel1_i = *(static_cast<int*>(params) + 0),
-		vel2_i = *(static_cast<int*>(params) + 1);
+struct Integrand_Params
+{
+	// correlate in these dimensions, (nx-1)*nt - 1...nx*nt-1
+	int corr1 = -1, corr2 = -1;
+	size_t nx = 0, nt = 0;
+};
 
-	if (vel1_i >= int(dimensions) or vel2_i >= int(dimensions)) {
+
+size_t index(const size_t x_i, const size_t t_i, const size_t nx)
+{
+	return x_i % nx + t_i * nx;
+}
+
+
+/*
+Integrand for single-time correlation function of burgers equation.
+*/
+double integrand(double* x, size_t dimensions, void* integrand_params) {
+	const auto& params = *static_cast<Integrand_Params*>(integrand_params);
+
+	if (params.corr1 >= int(dimensions) or params.corr2 >= int(dimensions)) {
 		std::cerr << __FILE__ "(" << __LINE__ << ")" << std::endl;
 		abort();
 	}
 
 	const bool correlate = [&](){
-		if (vel1_i < 0 or vel2_i < 0) {
+		if (params.corr1 < 0 or params.corr2 < 0) {
 			return false;
 		} else {
 			return true;
@@ -88,36 +101,41 @@ double integrand(double* x, size_t dimensions, void* params) {
 	const double
 		vel1 = [&]{
 			if (correlate) {
-				return *(x + vel1_i);
+				return x[index(params.corr1, params.nt - 1, params.nx)];
 			} else {
 				return 1.0;
 			}
 		}(),
 		vel2 = [&]{
 			if (correlate) {
-				return *(x + vel2_i);
+				return x[index(params.corr2, params.nt - 1, params.nx)];
 			} else {
 				return 1.0;
 			}
 		}(),
-		all_sum2 = [x, dimensions](){
-			double sum2 = 0;
-			for (size_t i = 0; i < dimensions; i++) {
-				sum2 += SQR(x[i]);
-			}
-			return sum2;
-		}(),
-		all_dx = [x, dimensions](){
-			double dx
-				= SQR(-0.5 * x[0] * (x[1] - x[dimensions - 1]) + x[1] - 2*x[0] + x[dimensions - 1])
-				+ SQR(-0.5 * x[dimensions - 1] * (x[0] - x[dimensions - 2]) + x[0] - 2*x[dimensions - 1] + x[dimensions - 2]);
-			for (size_t i = 1; i < dimensions - 1; i++) {
-				dx += SQR(-0.5 * x[i] * (x[i + 1] - x[i - 1]) + x[i + 1] - 2*x[i] + x[i - 1]);
-			}
-			return dx;
+		arg4exp = [&](){
+			double ret_val = 0;
+			for (size_t x_i = 0; x_i < params.nx; x_i++) {
+			for (size_t t_i = 0; t_i < params.nt - 1; t_i++) {
+				ret_val += SQR(
+					+ x[index(x_i, t_i + 1, params.nx)]
+					- x[index(x_i, t_i    , params.nx)]
+					+ 0.5 * x[index(x_i, t_i, params.nx)]
+						* (
+							+ x[index(x_i + 1, t_i, params.nx)]
+							- x[index(x_i - 1, t_i, params.nx)]
+						)
+					- (
+						+     x[index(x_i + 1, t_i, params.nx)]
+						- 2 * x[index(x_i    , t_i, params.nx)]
+						+     x[index(x_i - 1, t_i, params.nx)]
+					)
+				);
+			}}
+			return ret_val;
 		}();
 
-	return vel1 * vel2 * exp(-0.5 * (all_sum2 + all_dx));
+	return vel1 * vel2 * exp(-0.5 * arg4exp);
 }
 
 
@@ -130,6 +148,7 @@ nr_calls v0min v0max v1min v1max ...
 int main(int argc, char* argv[])
 {
 	int corr1 = 0, corr2 = 0;
+	size_t nx = 0, nt = 0;
 
 	boost::program_options::options_description
 		options("Usage: program_name [options], where options are");
@@ -140,7 +159,13 @@ int main(int argc, char* argv[])
 			"Number of first correlation dimension starting from 0, not calculated if < 0")
 		("corr2",
 			boost::program_options::value<int>(&corr2)->required(),
-			"Number of second correlation dimension starting from 0, not calculated if < 0");
+			"Number of second correlation dimension starting from 0, not calculated if < 0")
+		("nx",
+			boost::program_options::value<size_t>(&nx)->required(),
+			"Number of grid points in x direction, nx*nt must equal number of dimension given on stdin")
+		("nt",
+			boost::program_options::value<size_t>(&nt)->required(),
+			"Number of grid points in t direction, nx*nt must equal number of dimension given on stdin");
 
 	boost::program_options::variables_map var_map;
 	try {
@@ -160,6 +185,19 @@ int main(int argc, char* argv[])
 		return EXIT_FAILURE;
 	}
 	boost::program_options::notify(var_map);
+
+	if (nx == 0) {
+		std::cerr <<  __FILE__ << "(" << __LINE__ << "): "
+			<< "Number of grid points in x direction must be > 0"
+			<< std::endl;
+		return EXIT_FAILURE;
+	}
+	if (nt == 0) {
+		std::cerr <<  __FILE__ << "(" << __LINE__ << "): "
+			<< "Number of grid points in t direction must be > 0"
+			<< std::endl;
+		return EXIT_FAILURE;
+	}
 
 	if (var_map.count("help") > 0) {
 		std::cout << options << std::endl;
@@ -235,11 +273,15 @@ int main(int argc, char* argv[])
 			#endif
 		}
 		dimensions = mins.size();
+		if (dimensions != nx * nt) {
+			std::cerr << "Number of dimensions not equal to nx*nt" << std::endl;
+			return EXIT_FAILURE;
+		}
 
 		function.dim = dimensions;
 
-		std::array<int, 2> corrs{corr1, corr2};
-		function.params = corrs.data();
+		Integrand_Params params{corr1, corr2, nx, nt};
+		function.params = &params;
 
 		std::vector<int> split_dims(dimensions);
 		double result = 0, error = 0;
