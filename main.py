@@ -19,6 +19,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import argparse
+from os.path import exists
 import shlex
 from subprocess import Popen, PIPE
 from sys import stdout
@@ -133,6 +134,10 @@ if __name__ == '__main__':
 
 	if args.dimensions < 1:
 		exit('Number of dimensions must be at least 1')
+
+	if not exists(args.integrator):
+		print('Integrator', args.integrator, "doesn't exist")
+		exit(1)
 
 	# prepare integrator program
 	arg_list = [args.integrator]
