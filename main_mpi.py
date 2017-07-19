@@ -193,7 +193,8 @@ if __name__ == '__main__':
 		if args.args != None:
 			arg_list += shlex.split(args.args)
 		integrator = Popen(arg_list, stdin = PIPE, stdout = PIPE, universal_newlines = True, bufsize = 1)
-		print('Integrator initialized by rank', rank)
+		if args.verbose:
+			print('Integrator initialized by rank', rank)
 		stdout.flush()
 
 	dimensions = list(range(args.dimensions))
