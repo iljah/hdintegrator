@@ -84,14 +84,20 @@ Integrand for single-time correlation function of burgers equation.
 */
 double integrand(double* x, size_t dimensions, void* integrand_params) {
 	const auto& params = *static_cast<Integrand_Params*>(integrand_params);
+	const auto
+		corr1 = params.corr1,
+		corr2 = params.corr2;
+	const auto
+		nx = params.nx,
+		nt = params.nt;
 
-	if (params.corr1 >= int(dimensions) or params.corr2 >= int(dimensions)) {
+	if (corr1 >= int(dimensions) or corr2 >= int(dimensions)) {
 		std::cerr << __FILE__ "(" << __LINE__ << ")" << std::endl;
 		abort();
 	}
 
 	const bool correlate = [&](){
-		if (params.corr1 < 0 or params.corr2 < 0) {
+		if (corr1 < 0 or corr2 < 0) {
 			return false;
 		} else {
 			return true;
@@ -101,34 +107,34 @@ double integrand(double* x, size_t dimensions, void* integrand_params) {
 	const double
 		vel1 = [&]{
 			if (correlate) {
-				return x[index(params.corr1, params.nt - 1, params.nx)];
+				return x[index(corr1, nt - 1, nx)];
 			} else {
 				return 1.0;
 			}
 		}(),
 		vel2 = [&]{
 			if (correlate) {
-				return x[index(params.corr2, params.nt - 1, params.nx)];
+				return x[index(corr2, nt - 1, nx)];
 			} else {
 				return 1.0;
 			}
 		}(),
 		arg4exp = [&](){
 			double ret_val = 0;
-			for (size_t x_i = 0; x_i < params.nx; x_i++) {
-			for (size_t t_i = 0; t_i < params.nt - 1; t_i++) {
+			for (size_t t_i = 0; t_i < nt - 1; t_i++) {
+			for (size_t x_i = 0; x_i < nx; x_i++) {
 				ret_val += SQR(
-					+ x[index(x_i, t_i + 1, params.nx)]
-					- x[index(x_i, t_i    , params.nx)]
-					+ 0.5 * x[index(x_i, t_i, params.nx)]
+					+ x[index(x_i, t_i + 1, nx)]
+					- x[index(x_i, t_i    , nx)]
+					+ 0.5 * x[index(x_i, t_i, nx)]
 						* (
-							+ x[index(x_i + 1, t_i, params.nx)]
-							- x[index(x_i - 1, t_i, params.nx)]
+							+ x[index(x_i + 1     , t_i, nx)]
+							- x[index(x_i + nx - 1, t_i, nx)]
 						)
 					- (
-						+     x[index(x_i + 1, t_i, params.nx)]
-						- 2 * x[index(x_i    , t_i, params.nx)]
-						+     x[index(x_i - 1, t_i, params.nx)]
+						+     x[index(x_i + 1     , t_i, nx)]
+						- 2 * x[index(x_i         , t_i, nx)]
+						+     x[index(x_i + nx - 1, t_i, nx)]
 					)
 				);
 			}}
