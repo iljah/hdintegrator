@@ -225,8 +225,6 @@ int main(int argc, char* argv[])
 	decltype(gsl_monte_vegas_alloc(0)) state{};
 	#endif
 
-	std::vector<int> split_dims;
-
 	std::string line;
 	while (std::getline(std::cin, line)) {
 
