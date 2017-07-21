@@ -20,6 +20,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import argparse
 from os.path import exists
+from random import choice, randint
 import shlex
 from subprocess import Popen, PIPE
 from sys import stdout
@@ -128,7 +129,7 @@ if __name__ == '__main__':
 		type = int,
 		default = 0,
 		metavar = 'S',
-		help = 'Split initial cell S times in every dimension before integrating'
+		help = 'Split S times a random grid cell in random dimension before integrating'
 	)
 	parser.add_argument(
 		'--calls',
@@ -214,9 +215,10 @@ if __name__ == '__main__':
 		grid = ndgrid(c)
 		cells_to_process = [c]
 
-		split(c, args.prerefine, dimensions, grid)
+		for i in range(args.prerefine):
+			split(choice(grid.get_cells()), 1, [randint(0, len(dimensions) - 1)], grid)
 		if args.verbose:
-			print('Grid initialized by rank', rank)
+			print('Grid initialized by rank', rank, 'with', len(grid.get_cells()), 'cells')
 			stdout.flush()
 
 	if rank > 0:
