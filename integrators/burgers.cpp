@@ -121,23 +121,25 @@ double integrand(double* x, size_t dimensions, void* integrand_params) {
 		}(),
 		arg4exp = [&](){
 			double ret_val = 0;
-			for (size_t t_i = 0; t_i < nt - 1; t_i++) {
 			for (size_t x_i = 0; x_i < nx; x_i++) {
-				ret_val += SQR(
-					+ x[index(x_i, t_i + 1, nx)]
-					- x[index(x_i, t_i    , nx)]
-					+ 0.5 * x[index(x_i, t_i, nx)]
-						* (
-							+ x[index(x_i + 1     , t_i, nx)]
-							- x[index(x_i + nx - 1, t_i, nx)]
+				ret_val += SQR(x[index(x_i, 0, nx)]);
+				for (size_t t_i = 0; t_i < nt - 1; t_i++) {
+					ret_val += SQR(
+						+ x[index(x_i, t_i + 1, nx)]
+						- x[index(x_i, t_i    , nx)]
+						+ 0.5 * x[index(x_i, t_i, nx)]
+							* (
+								+ x[index(x_i + 1     , t_i, nx)]
+								- x[index(x_i + nx - 1, t_i, nx)]
+							)
+						- (
+							+     x[index(x_i + 1     , t_i, nx)]
+							- 2 * x[index(x_i         , t_i, nx)]
+							+     x[index(x_i + nx - 1, t_i, nx)]
 						)
-					- (
-						+     x[index(x_i + 1     , t_i, nx)]
-						- 2 * x[index(x_i         , t_i, nx)]
-						+     x[index(x_i + nx - 1, t_i, nx)]
-					)
-				);
-			}}
+					);
+				}
+			}
 			return ret_val;
 		}();
 
