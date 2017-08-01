@@ -73,9 +73,9 @@ struct Integrand_Params
 };
 
 
-size_t index(const size_t x_i, const size_t t_i, const size_t nx)
+size_t index(const size_t x_i, const size_t t_i, const size_t nx, const size_t nt)
 {
-	return x_i % nx + t_i * nx;
+	return x_i % nx + (t_i % nt) * nx;
 }
 
 
@@ -96,6 +96,11 @@ double integrand(double* x, size_t dimensions, void* integrand_params) {
 		abort();
 	}
 
+	if (nx * nt != dimensions) {
+		std::cerr << __FILE__ "(" << __LINE__ << ")" << std::endl;
+		abort();
+	}
+
 	const bool correlate = [&](){
 		if (corr1 < 0 or corr2 < 0) {
 			return false;
@@ -104,46 +109,59 @@ double integrand(double* x, size_t dimensions, void* integrand_params) {
 		}
 	}();
 
+	// transformed version, integration range -1..1 instead of -inf..inf
+	const std::vector<double> t = [x, dimensions](){
+		std::vector<double> ret_val(x, x + dimensions);
+		for (auto& i: ret_val) {
+			i = i / (1 - i*i);
+		}
+		return ret_val;
+	}();
+
 	const double
+		transform_factor = [&](){
+			double ret_val = 1;
+			for (size_t t_i = 0; t_i < nt; t_i++) {
+			for (size_t x_i = 0; x_i < nx; x_i++) {
+				const double x2 = SQR(x[index(x_i, t_i, nx, nt)]);
+				ret_val *= (1 + x2) / SQR(1 - x2);
+			}}
+			return ret_val;
+		}(),
 		vel1 = [&]{
 			if (correlate) {
-				return x[index(corr1, nt - 1, nx)];
+				return t[index(corr1, 0, nx, nt)];
 			} else {
 				return 1.0;
 			}
 		}(),
 		vel2 = [&]{
 			if (correlate) {
-				return x[index(corr2, nt - 1, nx)];
+				return t[index(corr2, 0, nx, nt)];
 			} else {
 				return 1.0;
 			}
 		}(),
 		arg4exp = [&](){
 			double ret_val = 0;
+			for (size_t t_i = 0; t_i < nt; t_i++) {
 			for (size_t x_i = 0; x_i < nx; x_i++) {
-				ret_val += SQR(x[index(x_i, 0, nx)]);
-				for (size_t t_i = 0; t_i < nt - 1; t_i++) {
-					ret_val += SQR(
-						+ x[index(x_i, t_i + 1, nx)]
-						- x[index(x_i, t_i    , nx)]
-						+ 0.5 * x[index(x_i, t_i, nx)]
-							* (
-								+ x[index(x_i + 1     , t_i, nx)]
-								- x[index(x_i + nx - 1, t_i, nx)]
-							)
-						- (
-							+     x[index(x_i + 1     , t_i, nx)]
-							- 2 * x[index(x_i         , t_i, nx)]
-							+     x[index(x_i + nx - 1, t_i, nx)]
+				ret_val += SQR(
+					+ t[index(x_i         , t_i + 1, nx, nt)]
+					+ t[index(x_i         , t_i    , nx, nt)]
+					- t[index(x_i + 1     , t_i    , nx, nt)]
+					- t[index(x_i + nx - 1, t_i    , nx, nt)]
+					+ 0.5 * t[index(x_i, t_i, nx, nt)]
+						* (
+							+ t[index(x_i + 1     , t_i, nx, nt)]
+							- t[index(x_i + nx - 1, t_i, nx, nt)]
 						)
-					);
-				}
-			}
+				);
+			}}
 			return ret_val;
 		}();
 
-	return vel1 * vel2 * exp(-0.5 * arg4exp);
+	return transform_factor * vel1 * vel2 * exp(-0.5 * arg4exp);
 }
 
 
