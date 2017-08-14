@@ -1,5 +1,5 @@
 all: \
-	integrators/example2 \
+	integrators/N-sphere \
 	integrators/burgers_plain \
 	integrators/burgers_miser \
 	integrators/burgers_vegas \
@@ -11,7 +11,7 @@ all: \
 
 COMP = g++ -std=c++17 -O3 -march=native -W -Wall -Wextra -Wpedantic $< -o $@
 
-integrators/example2: integrators/example2.cpp Makefile
+integrators/N-sphere: integrators/N-sphere.cpp Makefile
 	$(COMP) integrators/gsl/plain2.c -I integrators/gsl -lgsl -lgslcblas
 
 integrators/burgers_plain: integrators/burgers.cpp integrators/gsl/plain2.c Makefile
