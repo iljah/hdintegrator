@@ -19,6 +19,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import argparse
+from math import isnan
 from os.path import exists
 from random import choice, randint
 import shlex
@@ -367,8 +368,6 @@ if __name__ == '__main__':
 									work_left += 2
 								break
 
-			#print('Work left', work_left)
-			#stdout.flush()
 			if work_left <= 0:
 				stdout.flush()
 				break
@@ -377,8 +376,23 @@ if __name__ == '__main__':
 			comm.send(obj = Work_Item(), dest = i, tag = 1)
 
 	if rank == 0:
+		total_vol, nan_vol = 0.0, 0.0
 		value, error = 0.0, 0.0
+
 		for c in grid.get_cells():
+			vol = 1
+			extents = c.get_extents()
+			for extent in extents:
+				vol *= extents[extent][1] - extents[extent][0]
+			total_vol += vol
+
+			if isnan(c.data['value']):
+				print('NaN encountered, skipping', vol, value)
+				nan_vol += vol
+				continue
+
 			value += c.data['value']
-			error += c.data['error']
-		print(value, error)
+
+			if not isnan(c.data['error']):
+				error += c.data['error']
+		print(value, error, nan_vol / total_vol)
