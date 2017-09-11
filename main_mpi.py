@@ -19,8 +19,11 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import argparse
+from datetime import datetime, timedelta
 from math import isnan
+from os import rename
 from os.path import exists
+from pickle import dump, load
 from random import choice, randint
 import shlex
 from subprocess import Popen, PIPE
@@ -69,18 +72,39 @@ class Work_Tracker:
 		self.processing = None
 
 
+def get_info(grid):
+	converged_cells = 0
+	# sum up final result
+	total_vol, nan_vol = 0.0, 0.0
+	value, error = 0.0, 0.0
+
+	cells = grid.get_cells()
+	for c in cells:
+		if c.data['converged']:
+			converged_cells += 1
+
+		vol = 1
+		extents = c.get_extents()
+		for extent in extents:
+			vol *= extents[extent][1] - extents[extent][0]
+		total_vol += vol
+
+		if c.data['value'] != None:
+			if isnan(c.data['value']):
+				nan_vol += vol
+			else:
+				value += c.data['value']
+
+		if c.data['error'] != None and not isnan(c.data['error']):
+			error += c.data['error']
+
+	return value, error, nan_vol, total_vol, converged_cells, len(cells)
+
+
 if __name__ == '__main__':
 
 	comm = MPI.COMM_WORLD
 	rank = comm.Get_rank()
-	if comm.size < 2:
-		if rank == 0:
-			print('At least 2 processes required')
-		exit(1)
-
-	if rank == 0:
-		print('Starting with', comm.size, 'processes')
-		stdout.flush()
 
 	parser = argparse.ArgumentParser(
 		description = 'Integrate a mathematical function',
@@ -100,13 +124,13 @@ if __name__ == '__main__':
 	)
 	parser.add_argument(
 		'--integrator',
-		required = True,
+		default = '',
 		help = 'Path to integrator program to use, relative to current working directory'
 	)
 	parser.add_argument(
 		'--dimensions',
-		required = True,
 		type = int,
+		default = 0,
 		help = 'Number of dimensions to use'
 	)
 	parser.add_argument(
@@ -166,18 +190,52 @@ if __name__ == '__main__':
 		default = 1e-3,
 		help = 'Consider result converged when using F times more calls gives an absolute result less than M.'
 	)
+	parser.add_argument(
+		'--restart',
+		metavar = 'R',
+		default = '',
+		help = 'Continue integration from, or write result to file R every I seconds, if empty start integration from scratch (do not continue from result files of untrusted sources).'
+	)
+	parser.add_argument(
+		'--restart-interval',
+		metavar = 'I',
+		type = int,
+		default = -1,
+		help = 'Write result to file R every I seconds during integration, if < 0 continue integration from file R instead.'
+	)
+	parser.add_argument(
+		'--inspect',
+		default = '',
+		help = 'Print information about given restart file and exit.'
+	)
 
 	args = parser.parse_args()
-
-	if rank == 0:
-		print('Arguments parsed')
-		stdout.flush()
 
 	if args.help:
 		if rank == 0:
 			parser.print_help()
 			stdout.flush()
 		exit()
+
+	if args.inspect != '':
+		if rank == 0:
+			if not exists(args.inspect):
+				print('Restart file', args.inspect, "doesn't exist")
+				exit(1)
+			with open(args.inspect, 'rb') as restartfile:
+				grid = load(restartfile)
+			value, error, nan_vol, total_vol, converged, nr_cells = get_info(grid)
+			print('Value:', value, 'error:', error, 'NaN volume/total:', nan_vol / total_vol, ',', converged, '/', nr_cells, 'converged cells')
+		exit()
+
+	if comm.size < 2:
+		if rank == 0:
+			print('At least 2 processes required')
+		exit(1)
+
+	if rank == 0:
+		print('Starting with', comm.size, 'processes')
+		stdout.flush()
 
 	if args.dimensions < 1:
 		if rank == 0:
@@ -188,42 +246,165 @@ if __name__ == '__main__':
 		print('Integrator', args.integrator, "doesn't exist")
 		exit(1)
 
-	# prepare integrator program
-	integrator = None
-	if rank > 0:
-		arg_list = [args.integrator]
-		if args.args != None:
-			arg_list += shlex.split(args.args)
-		integrator = Popen(arg_list, stdin = PIPE, stdout = PIPE, universal_newlines = True, bufsize = 1)
-		if args.verbose:
-			print('Integrator initialized by rank', rank)
-		stdout.flush()
 
 	dimensions = list(range(args.dimensions))
 
-	# initialize grid for integration
-	grid = None
-	cells_to_process = None
 	if rank == 0:
-		c = cell()
-		c.data['id'] = 1
-		c.data['processing'] = False
-		c.data['converged'] = False
-		c.data['value'] = None
-		c.data['error'] = None
-		for i in dimensions:
-			c.set_extent(i, args.min_extent, args.max_extent)
-		grid = ndgrid(c)
-		cells_to_process = [c]
 
-		for i in range(args.prerefine):
-			split(choice(grid.get_cells()), 1, [randint(0, len(dimensions) - 1)], grid)
+		# prepare grid for integration
+		grid = None
+
+		if args.restart == '' or args.restart_interval > 0:
+			c = cell()
+			c.data['id'] = 1
+			c.data['processing'] = False
+			c.data['converged'] = False
+			c.data['value'] = None
+			c.data['error'] = None
+			for i in dimensions:
+				c.set_extent(i, args.min_extent, args.max_extent)
+			grid = ndgrid(c)
+
+			for i in range(args.prerefine):
+				split(choice(grid.get_cells()), 1, [randint(0, len(dimensions) - 1)], grid)
+			if args.verbose:
+				print('Grid initialized by rank', rank, 'with', len(grid.get_cells()), 'cells')
+				stdout.flush()
+
+		else:
+			if not exists(args.restart):
+				print('Restart file', args.restart, "doesn't exist.")
+				exit(1)
+
+			if args.verbose:
+				print('Restarting from', args.restart, end = '...  ')
+			with open(args.restart, 'rb') as restartfile:
+				grid = load(restartfile)
+
+			converged = 0
+			for c in grid.get_cells():
+				if c.data['converged']:
+					converged += 1
+				c.data['processing'] = False
+			print(converged, '/', len(grid.get_cells()), 'converged')
+
+		# tracker for every rank > 0
+		work_trackers = [Work_Tracker() for i in range(comm.size - 1)]
+		for work_tracker in work_trackers:
+			work_tracker.processing = False
+			work_tracker.item = Work_Item()
+
 		if args.verbose:
-			print('Grid initialized by rank', rank, 'with', len(grid.get_cells()), 'cells')
+			print('Number of work item slots:', len(work_trackers))
 			stdout.flush()
 
-	if rank > 0:
+		next_restart = datetime.now()
+		while True:
+			sleep(0.1)
 
+			# write restart if needed
+			now = datetime.now()
+			if args.restart_interval > 0 and next_restart <= now:
+				if args.verbose:
+					print('Writing restart file at', now.isoformat().split('.')[0])
+				next_restart += timedelta(seconds = args.restart_interval)
+
+				if exists(args.restart):
+					rename(args.restart, args.restart + '-' + now.isoformat().split('.')[0])
+				with open(args.restart, 'wb') as restartfile:
+					dump(grid, restartfile)
+
+
+			work_left = 0
+			for c in grid.get_cells():
+				if not c.data['converged']:
+					work_left += 1
+			for proc in range(len(work_trackers)):
+
+				# idle worker
+				if not work_trackers[proc].processing:
+
+					# find cell to process
+					for c in grid.get_cells():
+						if c.data['converged'] or c.data['processing']:
+							continue
+
+						# found
+						work_trackers[proc].processing = True
+						c.data['processing'] = True
+						work_trackers[proc].item.converged = False
+						work_trackers[proc].item.cell_id = c.data['id']
+						work_trackers[proc].item.volume = [c.get_extent(dim) for dim in dimensions]
+						if args.verbose:
+							print('Sending cell', c.data['id'], 'for processing to rank', proc + 1)
+							stdout.flush()
+						comm.send(obj = work_trackers[proc].item, dest = proc + 1, tag = 1)
+						break
+
+				else:
+
+					# check if result ready
+					if comm.Iprobe(source = proc + 1, tag = 1):
+						work_left -= 1
+						work_trackers[proc].processing = False
+						work_trackers[proc].item = comm.recv(source = proc + 1, tag = 1)
+						cell_id = work_trackers[proc].item.cell_id
+						if args.verbose:
+							print('Received result for cell', cell_id, 'from process', proc + 1)
+							stdout.flush()
+						found = False
+						for c in grid.get_cells():
+							if c.data['id'] == cell_id:
+								found = True
+						if not found:
+							print('Cell', cell_id, 'not in grid')
+							stdout.flush()
+							exit(1)
+						for c in grid.get_cells():
+							if c.data['id'] == cell_id:
+								c.data['processing'] = False
+								c.data['converged'] = work_trackers[proc].item.converged
+								if work_trackers[proc].item.value == None and work_trackers[proc].item.converged:
+									print('Got none value for converged result')
+									stdout.flush()
+									exit(1)
+								c.data['value'] = work_trackers[proc].item.value
+								c.data['error'] = work_trackers[proc].item.error
+								split_dim = work_trackers[proc].item.split_dim
+								if not c.data['converged']:
+									if args.verbose:
+										print("Cell didn't converge, splitting along dimension", split_dim)
+										stdout.flush()
+									split(c, 1, [split_dim], grid)
+									work_left += 2
+								break
+
+			if work_left <= 0:
+				stdout.flush()
+				break
+
+		# tell others to quit
+		for i in range(1, comm.size):
+			comm.send(obj = Work_Item(), dest = i, tag = 1)
+
+		value, error, nan_vol, total_vol, converged, nr_cells = get_info(grid)
+		print(value, error, nan_vol / total_vol)
+
+
+	else: # if rank == 0
+
+		# prepare integrator program
+		integrator = None
+		if rank > 0:
+			arg_list = [args.integrator]
+			if args.args != None:
+				arg_list += shlex.split(args.args)
+			integrator = Popen(arg_list, stdin = PIPE, stdout = PIPE, universal_newlines = True, bufsize = 1)
+			if args.verbose:
+				print('Integrator initialized by rank', rank)
+			stdout.flush()
+
+		# work loop
 		while True:
 			if args.verbose:
 				print('Rank', rank, 'waiting for work')
@@ -288,111 +469,3 @@ if __name__ == '__main__':
 				print('Rank', rank, 'returning work')
 				stdout.flush()
 			comm.send(obj = work_item, dest = 0, tag = 1)
-
-	else: # rank == 0
-
-		work_trackers = [Work_Tracker() for i in range(comm.size - 1)]
-		for work_tracker in work_trackers:
-			work_tracker.processing = False
-			work_tracker.item = Work_Item()
-
-		if args.verbose:
-			print('Number of work item slots:', len(work_trackers))
-			stdout.flush()
-
-		while True:
-			sleep(0.1)
-
-			work_left = 0
-			for c in grid.get_cells():
-				if not c.data['converged']:
-					work_left += 1
-			for proc in range(len(work_trackers)):
-
-				# idle worker
-				if not work_trackers[proc].processing:
-
-					# find cell to process
-					for c in grid.get_cells():
-						if c.data['converged'] or c.data['processing']:
-							continue
-
-						# found
-						work_trackers[proc].processing = True
-						all_idle = False
-						c.data['processing'] = True
-						work_trackers[proc].item.converged = False
-						work_trackers[proc].item.cell_id = c.data['id']
-						work_trackers[proc].item.volume = [c.get_extent(dim) for dim in dimensions]
-						if args.verbose:
-							print('Sending cell', c.data['id'], 'for processing to rank', proc + 1)
-							stdout.flush()
-						comm.send(obj = work_trackers[proc].item, dest = proc + 1, tag = 1)
-						break
-
-				else:
-
-					# check if result ready
-					if comm.Iprobe(source = proc + 1, tag = 1):
-						work_left -= 1
-						work_trackers[proc].processing = False
-						work_trackers[proc].item = comm.recv(source = proc + 1, tag = 1)
-						cell_id = work_trackers[proc].item.cell_id
-						if args.verbose:
-							print('Received result for cell', cell_id, 'from process', proc + 1)
-							stdout.flush()
-						found = False
-						for c in grid.get_cells():
-							if c.data['id'] == cell_id:
-								found = True
-						if not found:
-							print('Cell', cell_id, 'not in grid')
-							stdout.flush()
-							exit(1)
-						for c in grid.get_cells():
-							if c.data['id'] == cell_id:
-								c.data['processing'] = False
-								c.data['converged'] = work_trackers[proc].item.converged
-								if work_trackers[proc].item.value == None and work_trackers[proc].item.converged:
-									print('Got none value for converged result')
-									stdout.flush()
-									exit(1)
-								c.data['value'] = work_trackers[proc].item.value
-								c.data['error'] = work_trackers[proc].item.error
-								split_dim = work_trackers[proc].item.split_dim
-								if not c.data['converged']:
-									if args.verbose:
-										print("Cell didn't converge, splitting along dimension", split_dim)
-										stdout.flush()
-									split(c, 1, [split_dim], grid)
-									work_left += 2
-								break
-
-			if work_left <= 0:
-				stdout.flush()
-				break
-
-		for i in range(1, comm.size):
-			comm.send(obj = Work_Item(), dest = i, tag = 1)
-
-	if rank == 0:
-		total_vol, nan_vol = 0.0, 0.0
-		value, error = 0.0, 0.0
-
-		for c in grid.get_cells():
-			vol = 1
-			extents = c.get_extents()
-			for extent in extents:
-				vol *= extents[extent][1] - extents[extent][0]
-			total_vol += vol
-
-			if isnan(c.data['value']):
-				print('NaN encountered, skipping', vol, value)
-				nan_vol += vol
-				continue
-
-			value += c.data['value']
-
-			if not isnan(c.data['error']):
-				error += c.data['error']
-		print(value, error, nan_vol / total_vol)
