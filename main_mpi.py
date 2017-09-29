@@ -65,11 +65,20 @@ class Work_Item:
 		self.error = None
 		self.split_dim = None
 
+	def __str__(self):
+		ret_val = 'Id: ' + str(self.cell_id) + ', Vol: '
+		for extent in self.volume:
+			ret_val += '[' + str(extent[0]) + ', ' + str(extent[1]) + '], '
+		return ret_val
+
+	__repr__ = __str__
+
 
 class Work_Tracker:
 	def __init__(self):
 		self.item = None
 		self.processing = None
+		self.start_time = None
 
 
 def get_info(grid):
@@ -194,14 +203,14 @@ if __name__ == '__main__':
 		'--restart',
 		metavar = 'R',
 		default = '',
-		help = 'Continue integration from, or write result to file R every I seconds, if empty start integration from scratch (do not continue from result files of untrusted sources).'
+		help = 'If R exists continue integration from result in R, write result to R every I seconds (do not continue from result files of untrusted sources).'
 	)
 	parser.add_argument(
 		'--restart-interval',
 		metavar = 'I',
 		type = int,
 		default = -1,
-		help = 'Write result to file R every I seconds during integration, if < 0 continue integration from file R instead.'
+		help = 'If I > 0 write result to file R every I seconds during integration.'
 	)
 	parser.add_argument(
 		'--inspect',
@@ -253,8 +262,25 @@ if __name__ == '__main__':
 
 		# prepare grid for integration
 		grid = None
+		restart = False
 
-		if args.restart == '' or args.restart_interval > 0:
+		if args.restart != '' and exists(args.restart):
+			restart = True
+
+		if restart:
+			if args.verbose:
+				print('Restarting from', args.restart, end = '...  ')
+			with open(args.restart, 'rb') as restartfile:
+				grid = load(restartfile)
+
+			converged = 0
+			for c in grid.get_cells():
+				if c.data['converged']:
+					converged += 1
+				c.data['processing'] = False
+			print(converged, '/', len(grid.get_cells()), 'converged')
+
+		else:
 			c = cell()
 			c.data['id'] = 1
 			c.data['processing'] = False
@@ -270,23 +296,6 @@ if __name__ == '__main__':
 			if args.verbose:
 				print('Grid initialized by rank', rank, 'with', len(grid.get_cells()), 'cells')
 				stdout.flush()
-
-		else:
-			if not exists(args.restart):
-				print('Restart file', args.restart, "doesn't exist.")
-				exit(1)
-
-			if args.verbose:
-				print('Restarting from', args.restart, end = '...  ')
-			with open(args.restart, 'rb') as restartfile:
-				grid = load(restartfile)
-
-			converged = 0
-			for c in grid.get_cells():
-				if c.data['converged']:
-					converged += 1
-				c.data['processing'] = False
-			print(converged, '/', len(grid.get_cells()), 'converged')
 
 		# tracker for every rank > 0
 		work_trackers = [Work_Tracker() for i in range(comm.size - 1)]
@@ -316,9 +325,15 @@ if __name__ == '__main__':
 
 
 			work_left = 0
+			processing = 0
 			for c in grid.get_cells():
 				if not c.data['converged']:
 					work_left += 1
+				if c.data['processing']:
+					processing += 1
+			if args.verbose:
+				print(work_left, 'work left,', processing, 'processing')
+
 			for proc in range(len(work_trackers)):
 
 				# idle worker
@@ -327,9 +342,12 @@ if __name__ == '__main__':
 					# find cell to process
 					for c in grid.get_cells():
 						if c.data['converged'] or c.data['processing']:
+							if c.data['processing']:
+								processing += 1
 							continue
 
 						# found
+						found = True
 						work_trackers[proc].processing = True
 						c.data['processing'] = True
 						work_trackers[proc].item.converged = False
@@ -339,11 +357,12 @@ if __name__ == '__main__':
 							print('Sending cell', c.data['id'], 'for processing to rank', proc + 1)
 							stdout.flush()
 						comm.send(obj = work_trackers[proc].item, dest = proc + 1, tag = 1)
+						work_trackers[proc].start_time = datetime.now()
 						break
 
 				else:
 
-					# check if result ready
+					# if result ready
 					if comm.Iprobe(source = proc + 1, tag = 1):
 						work_left -= 1
 						work_trackers[proc].processing = False
@@ -356,6 +375,7 @@ if __name__ == '__main__':
 						for c in grid.get_cells():
 							if c.data['id'] == cell_id:
 								found = True
+								break
 						if not found:
 							print('Cell', cell_id, 'not in grid')
 							stdout.flush()
@@ -378,6 +398,13 @@ if __name__ == '__main__':
 									split(c, 1, [split_dim], grid)
 									work_left += 2
 								break
+
+					# if result not ready
+					else:
+						processing_time = (datetime.now() - work_trackers[proc].start_time).seconds
+						if processing_time > 10:
+							print('Processing time', processing_time, 'for rank', proc + 1, ', work item', work_trackers[proc].item)
+
 
 			if work_left <= 0:
 				stdout.flush()
@@ -421,25 +448,70 @@ if __name__ == '__main__':
 				print('Rank', rank, 'processing cell', work_item.cell_id)
 				stdout.flush()
 
-			integrator.stdin.write('{:.15e} '.format(args.calls))
+			work_item.value = float('NaN')
+			work_item.error = float('NaN')
+			work_item.converged = False
+
+			failed = False
+			to_stdin = '{:.16e} '.format(args.calls)
 			for extent in work_item.volume:
-				integrator.stdin.write('{:.15e} {:.15e} '.format(extent[0], extent[1]))
-			integrator.stdin.write('\n')
+				ext_str = '{:.16e} {:.16e} '.format(extent[0], extent[1])
+				first, second = ext_str.split()
+				if first == second or float(first) >= float(second):
+					failed = True
+					break
+				to_stdin += ext_str
+			if failed:
+				print('Rank', rank, 'invalid extent, returning NaN')
+				comm.send(obj = work_item, dest = 0, tag = 1)
+				continue
+			integrator.stdin.write(to_stdin + '\n')
 			integrator.stdin.flush()
+			time_start = datetime.now()
+
 			stdout.flush()
 
-			value, error, split_dim = integrator.stdout.readline().strip().split()
-			work_item.value, work_item.error, work_item.split_dim = float(value), float(error), int(split_dim)
+			try:
+				value, error, split_dim = integrator.stdout.readline().strip().split()
+				work_item.value, work_item.error, work_item.split_dim = float(value), float(error), int(split_dim)
+			except:
+				print('Rank', rank, 'call to integrator failed, returning NaN, input string:', to_stdin)
+				comm.send(obj = work_item, dest = 0, tag = 1)
+				continue
+
+			processing_time = (datetime.now() - time_start).seconds
+			if processing_time > 5:
+				print('Rank', rank, 'processing time', processing_time, 'for input string:', to_stdin)
 
 			# check convergence
-			integrator.stdin.write('{:.15e} '.format(args.calls * args.convergence_factor))
+			failed = False
+			time_start = datetime.now()
+			to_stdin = '{:.16e} '.format(args.calls * args.calls_factor)
 			for extent in work_item.volume:
-				integrator.stdin.write('{:.15e} {:.15e} '.format(extent[0], extent[1]))
-			integrator.stdin.write('\n')
+				ext_str = '{:.16e} {:.16e} '.format(extent[0], extent[1])
+				first, second = ext_str.split()
+				if first == second or float(first) >= float(second):
+					failed = True
+					break
+				to_stdin += ext_str
+			if failed:
+				print('Rank', rank, 'invalid extent, returning NaN')
+				comm.send(obj = work_item, dest = 0, tag = 1)
+				continue
+			integrator.stdin.write(to_stdin + '\n')
 			integrator.stdin.flush()
 
-			new_value, new_error, new_split_dim = integrator.stdout.readline().strip().split()
-			new_value, new_error, new_split_dim = float(new_value), float(new_error), int(new_split_dim)
+			try:
+				new_value, new_error, new_split_dim = integrator.stdout.readline().strip().split()
+				new_value, new_error, new_split_dim = float(new_value), float(new_error), int(new_split_dim)
+			except:
+				print('Rank', rank, 'call to integrator failed, returning NaN, input string:', to_stdin)
+				comm.send(obj = work_item, dest = 0, tag = 1)
+				continue
+
+			processing_time = (datetime.now() - time_start).seconds
+			if processing_time > 5:
+				print('Rank', rank, 'processing time', processing_time, 'for input string:', to_stdin)
 
 			try:
 				convg_fact = max(abs(work_item.value), abs(new_value)) / min(abs(work_item.value), abs(new_value))

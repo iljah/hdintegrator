@@ -1,4 +1,6 @@
 all: \
+	integrators/failing \
+	integrators/hanging \
 	integrators/N-sphere \
 	integrators/burgers_plain \
 	integrators/burgers_miser \
@@ -10,6 +12,12 @@ all: \
 	integrators/turbulence4
 
 COMP = g++ -std=c++17 -O3 -march=native -W -Wall -Wextra -Wpedantic $< -o $@
+
+integrators/failing: integrators/failing.cpp Makefile
+	$(COMP)
+
+integrators/hanging: integrators/hanging.cpp Makefile
+	$(COMP)
 
 integrators/N-sphere: integrators/N-sphere.cpp Makefile
 	$(COMP) integrators/gsl/plain2.c -I integrators/gsl -lgsl -lgslcblas
