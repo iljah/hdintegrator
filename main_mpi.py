@@ -172,6 +172,13 @@ if __name__ == '__main__':
 		help = 'Request this number of calls to integrand from integrator'
 	)
 	parser.add_argument(
+		'--timer',
+		type = int,
+		default = 9999,
+		metavar = 'T',
+		help = 'Consider workers that do not return a result within T seconds as failed'
+	)
+	parser.add_argument(
 		'--calls-factor',
 		metavar = 'F',
 		type = float,
@@ -183,39 +190,39 @@ if __name__ == '__main__':
 		metavar = 'O',
 		type = float,
 		default = 1.01,
-		help = 'Consider result converged when using F times more calls gives a result within factor O.'
+		help = 'Consider result converged when using F times more calls gives a result within factor O'
 	)
 	parser.add_argument(
 		'--convergence-diff',
 		metavar = 'D',
 		type = float,
 		default = 1e-3,
-		help = 'Consider result converged when using F times more calls gives a result within difference D.'
+		help = 'Consider result converged when using F times more calls gives a result within difference D'
 	)
 	parser.add_argument(
 		'--min-value',
 		metavar = 'M',
 		type = float,
 		default = 1e-3,
-		help = 'Consider result converged when using F times more calls gives an absolute result less than M.'
+		help = 'Consider result converged when using F times more calls gives an absolute result less than M'
 	)
 	parser.add_argument(
 		'--restart',
 		metavar = 'R',
 		default = '',
-		help = 'If R exists continue integration from result in R, write result to R every I seconds (do not continue from result files of untrusted sources).'
+		help = 'If R exists continue integration from result in R, write result to R every I seconds (do not continue from result files of untrusted sources)'
 	)
 	parser.add_argument(
 		'--restart-interval',
 		metavar = 'I',
 		type = int,
 		default = -1,
-		help = 'If I > 0 write result to file R every I seconds during integration.'
+		help = 'If I > 0 write result to file R every I seconds during integration'
 	)
 	parser.add_argument(
 		'--inspect',
 		default = '',
-		help = 'Print information about given restart file and exit.'
+		help = 'Print information about given restart file and exit'
 	)
 
 	args = parser.parse_args()
@@ -334,7 +341,13 @@ if __name__ == '__main__':
 			if args.verbose:
 				print(work_left, 'work left,', processing, 'processing')
 
+			nr_failed = 0
 			for proc in range(len(work_trackers)):
+
+				# failed worker
+				if work_trackers[proc].processing == None:
+					nr_failed += 1
+					continue
 
 				# idle worker
 				if not work_trackers[proc].processing:
@@ -385,9 +398,10 @@ if __name__ == '__main__':
 								c.data['processing'] = False
 								c.data['converged'] = work_trackers[proc].item.converged
 								if work_trackers[proc].item.value == None and work_trackers[proc].item.converged:
-									print('Got none value for converged result')
+									print('Worker', proc + 1, 'failed')
 									stdout.flush()
-									exit(1)
+									work_trackers[proc].processing = None
+									break
 								c.data['value'] = work_trackers[proc].item.value
 								c.data['error'] = work_trackers[proc].item.error
 								split_dim = work_trackers[proc].item.split_dim
@@ -402,11 +416,18 @@ if __name__ == '__main__':
 					# if result not ready
 					else:
 						processing_time = (datetime.now() - work_trackers[proc].start_time).seconds
-						if processing_time > 10:
-							print('Processing time', processing_time, 'for rank', proc + 1, ', work item', work_trackers[proc].item)
+						if processing_time > args.timer:
+							print('Marking rank', proc + 1, 'as failed due to exceeded processing time, work item', work_trackers[proc].item)
+							work_trackers[proc].processing = None
+							break
 
 
 			if work_left <= 0:
+				stdout.flush()
+				break
+
+			if nr_failed >= comm.size - 1:
+				print('All workers failed, exiting...')
 				stdout.flush()
 				break
 
@@ -465,23 +486,27 @@ if __name__ == '__main__':
 				print('Rank', rank, 'invalid extent, returning NaN')
 				comm.send(obj = work_item, dest = 0, tag = 1)
 				continue
-			integrator.stdin.write(to_stdin + '\n')
-			integrator.stdin.flush()
-			time_start = datetime.now()
+
+			try:
+				integrator.stdin.write(to_stdin + '\n')
+				integrator.stdin.flush()
+			except Exception as e:
+				print('Rank', rank, 'request to integrator failed:', e)
+				work_item.value = None
+				work_item.converged = True
+				comm.send(obj = work_item, dest = 0, tag = 1)
+				break
 
 			stdout.flush()
 
 			try:
-				value, error, split_dim = integrator.stdout.readline().strip().split()
+				answer = integrator.stdout.readline()
+				value, error, split_dim = answer.strip().split()
 				work_item.value, work_item.error, work_item.split_dim = float(value), float(error), int(split_dim)
-			except:
-				print('Rank', rank, 'call to integrator failed, returning NaN, input string:', to_stdin)
+			except Exception as e:
+				print('Rank', rank, 'call to integrator failed with result:', answer, ', returning NaN, input string:', to_stdin, ', exception:', e)
 				comm.send(obj = work_item, dest = 0, tag = 1)
 				continue
-
-			processing_time = (datetime.now() - time_start).seconds
-			if processing_time > 5:
-				print('Rank', rank, 'processing time', processing_time, 'for input string:', to_stdin)
 
 			# check convergence
 			failed = False
@@ -498,20 +523,25 @@ if __name__ == '__main__':
 				print('Rank', rank, 'invalid extent, returning NaN')
 				comm.send(obj = work_item, dest = 0, tag = 1)
 				continue
-			integrator.stdin.write(to_stdin + '\n')
-			integrator.stdin.flush()
 
 			try:
-				new_value, new_error, new_split_dim = integrator.stdout.readline().strip().split()
+				integrator.stdin.write(to_stdin + '\n')
+				integrator.stdin.flush()
+			except Exception as e:
+				print('Rank', rank, 'request to integrator failed:', e)
+				work_item.value = None
+				work_item.converged = True
+				comm.send(obj = work_item, dest = 0, tag = 1)
+				break
+
+			try:
+				answer = integrator.stdout.readline()
+				new_value, new_error, new_split_dim = answer.strip().split()
 				new_value, new_error, new_split_dim = float(new_value), float(new_error), int(new_split_dim)
-			except:
-				print('Rank', rank, 'call to integrator failed, returning NaN, input string:', to_stdin)
+			except Exception as e:
+				print('Rank', rank, 'call to integrator failed with result:', answer, ', returning NaN, input string:', to_stdin, ', exception:', e)
 				comm.send(obj = work_item, dest = 0, tag = 1)
 				continue
-
-			processing_time = (datetime.now() - time_start).seconds
-			if processing_time > 5:
-				print('Rank', rank, 'processing time', processing_time, 'for input string:', to_stdin)
 
 			try:
 				convg_fact = max(abs(work_item.value), abs(new_value)) / min(abs(work_item.value), abs(new_value))

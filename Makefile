@@ -1,6 +1,8 @@
 all: \
 	integrators/failing \
+	integrators/maybe_failing \
 	integrators/hanging \
+	integrators/maybe_hanging \
 	integrators/N-sphere \
 	integrators/burgers_plain \
 	integrators/burgers_miser \
@@ -16,7 +18,13 @@ COMP = g++ -std=c++17 -O3 -march=native -W -Wall -Wextra -Wpedantic $< -o $@
 integrators/failing: integrators/failing.cpp Makefile
 	$(COMP)
 
+integrators/maybe_failing: integrators/maybe_failing.cpp Makefile
+	$(COMP)
+
 integrators/hanging: integrators/hanging.cpp Makefile
+	$(COMP)
+
+integrators/maybe_hanging: integrators/maybe_hanging.cpp Makefile
 	$(COMP)
 
 integrators/N-sphere: integrators/N-sphere.cpp Makefile
