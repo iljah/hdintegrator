@@ -314,7 +314,7 @@ if __name__ == '__main__':
 			print('Number of work item slots:', len(work_trackers))
 			stdout.flush()
 
-		next_restart = datetime.now()
+		next_restart = datetime.now() + timedelta(seconds = args_restart_interval)
 		while True:
 			sleep(0.1)
 
@@ -491,7 +491,7 @@ if __name__ == '__main__':
 				integrator.stdin.write(to_stdin + '\n')
 				integrator.stdin.flush()
 			except Exception as e:
-				print('Rank', rank, 'request to integrator failed:', e)
+				print('Rank', rank, 'request to integrator failed with input', to_stdin, ', error:', e)
 				work_item.value = None
 				work_item.converged = True
 				comm.send(obj = work_item, dest = 0, tag = 1)
@@ -528,7 +528,7 @@ if __name__ == '__main__':
 				integrator.stdin.write(to_stdin + '\n')
 				integrator.stdin.flush()
 			except Exception as e:
-				print('Rank', rank, 'request to integrator failed:', e)
+				print('Rank', rank, 'request to integrator failed with input', to_stdin, ', error:', e)
 				work_item.value = None
 				work_item.converged = True
 				comm.send(obj = work_item, dest = 0, tag = 1)
