@@ -110,6 +110,17 @@ def get_info(grid):
 	return value, error, nan_vol, total_vol, converged_cells, len(cells)
 
 
+def prepare_integrator(args):
+	arg_list = [args.integrator]
+	if args.args != None:
+		arg_list += shlex.split(args.args)
+	integrator = Popen(arg_list, stdin = PIPE, stdout = PIPE, universal_newlines = True, bufsize = 1)
+	if args.verbose:
+		print('Integrator initialized by rank', rank)
+	stdout.flush()
+	return integrator
+
+
 if __name__ == '__main__':
 
 	comm = MPI.COMM_WORLD
@@ -314,7 +325,7 @@ if __name__ == '__main__':
 			print('Number of work item slots:', len(work_trackers))
 			stdout.flush()
 
-		next_restart = datetime.now() + timedelta(seconds = args_restart_interval)
+		next_restart = datetime.now() + timedelta(seconds = args.restart_interval)
 		while True:
 			sleep(0.1)
 
@@ -442,15 +453,7 @@ if __name__ == '__main__':
 	else: # if rank == 0
 
 		# prepare integrator program
-		integrator = None
-		if rank > 0:
-			arg_list = [args.integrator]
-			if args.args != None:
-				arg_list += shlex.split(args.args)
-			integrator = Popen(arg_list, stdin = PIPE, stdout = PIPE, universal_newlines = True, bufsize = 1)
-			if args.verbose:
-				print('Integrator initialized by rank', rank)
-			stdout.flush()
+		integrator = prepare_integrator(args)
 
 		# work loop
 		while True:
@@ -492,10 +495,9 @@ if __name__ == '__main__':
 				integrator.stdin.flush()
 			except Exception as e:
 				print('Rank', rank, 'request to integrator failed with input', to_stdin, ', error:', e)
-				work_item.value = None
-				work_item.converged = True
+				integrator = prepare_integrator(args)
 				comm.send(obj = work_item, dest = 0, tag = 1)
-				break
+				continue
 
 			stdout.flush()
 
@@ -529,10 +531,9 @@ if __name__ == '__main__':
 				integrator.stdin.flush()
 			except Exception as e:
 				print('Rank', rank, 'request to integrator failed with input', to_stdin, ', error:', e)
-				work_item.value = None
-				work_item.converged = True
+				integrator = prepare_integrator(args)
 				comm.send(obj = work_item, dest = 0, tag = 1)
-				break
+				continue
 
 			try:
 				answer = integrator.stdout.readline()
