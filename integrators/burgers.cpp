@@ -275,6 +275,16 @@ int main(int argc, char* argv[])
 			return EXIT_FAILURE;
 		}
 
+		for (size_t i = 0; i < mins.size(); i++) {
+			if (mins[i] >= maxs[i]) {
+				std::cerr << "Starting coordinate of " << i+1
+					<< "th dimension is not smaller than ending coordinate: "
+					<< mins[i] << " >= " << maxs[i]
+					<< std::endl;
+				return EXIT_FAILURE;
+			}
+		}
+
 		if (first_integration) {
 			first_integration = false;
 			#if METHOD == 1
