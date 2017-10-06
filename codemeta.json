@@ -1,0 +1,23 @@
+{
+  "@context": "https://raw.githubusercontent.com/codemeta/codemeta/master/codemeta.jsonld",
+  "@type": "Code",
+  "author": [
+    {
+      "@id": "http://orcid.org/0000-0002-9542-5866",
+      "@type": "Person",
+      "email": "ilja.honkonen@fmi.fi",
+      "name": "Ilja Honkonen",
+      "affiliation": "Finnish Meteorological Institute"
+    }
+  ],
+  "identifier": "http://dx.doi.org/",
+  "codeRepository": "https://github.com/iljah/hdintegrator",
+  "datePublished": "2017-10-04",
+  "dateModified": "2017-10-04",
+  "dateCreated": "2017-10-04",
+  "description": "Program for numerically calculating integrals with arbitrary number of dimensions in parallel using Message Passing Interface",
+  "keywords": "software, numerical integration, arbitrary number of dimensions",
+  "license": "GPL-3.0",
+  "title": "hdintegrator",
+  "version": "v0.1"
+}
