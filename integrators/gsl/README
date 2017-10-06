@@ -1,0 +1,2 @@
+This directory has custom versions of GSL MC integrators that return the dimension of largest variation of the integral.
+This is used by HDIntegrator to split the integration volume into subvolumes to speed up the convergence of integration.
