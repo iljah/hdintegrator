@@ -1,0 +1,7 @@
+HDIntegrator requires Python 3, and mpi4py which itself requires an implementation of the Message Passing Interface standard such OpenMPI.
+Additionally the integrands located in integrators directory each have their own requirements and prerequisites.
+
+Integrands implemented in C++ require a C++ compiler and can be compiled automatically with GNU Make by using the Makefile located in this directory.
+Integrands are provided that use one of the following libraries: GNU GSL, cubature.
+
+Integrands implemented in Python require the scipy package.
