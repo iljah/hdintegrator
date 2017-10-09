@@ -30,9 +30,18 @@ from subprocess import Popen, PIPE
 from sys import stdout
 from time import sleep
 
-from cell import cell
-from mpi4py import MPI
-from ndgrid import ndgrid
+try:
+	from cell import cell
+	from ndgrid import ndgrid
+except Exception as e:
+	print("Couldn't import required submodule(s), did you clone them with:\n")
+	print('git clone --recursive https://github.com/iljah/hdintegrator.git')
+	exit(1)
+
+try:
+	from mpi4py import MPI
+except Exception as e:
+	exit("Couldn't import mpi4py: " + str(e))
 
 
 '''
@@ -233,7 +242,7 @@ if __name__ == '__main__':
 	parser.add_argument(
 		'--inspect',
 		default = '',
-		help = 'Print information about given restart file and exit'
+		help = 'If not empty, print information about given restart file and exit'
 	)
 
 	args = parser.parse_args()
