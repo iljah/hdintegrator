@@ -269,7 +269,7 @@ if __name__ == '__main__':
 			print('At least 2 processes required')
 		exit(1)
 
-	if rank == 0:
+	if rank == 0 and args.verbose:
 		print('Starting with', comm.size, 'processes')
 		stdout.flush()
 
