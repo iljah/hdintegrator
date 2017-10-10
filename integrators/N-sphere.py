@@ -19,6 +19,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 
+from random import randint
 from sys import stdin, stdout
 
 from scipy.integrate import nquad
@@ -66,5 +67,5 @@ if __name__ == '__main__':
 		for i in range(2, len(instr), 2):
 			extents.append((float(instr[i - 1]), float(instr[i])))
 		result, error = nquad(integrand, extents)
-		stdout.write('{:.15e} {:.15e}\n'.format(result, error))
+		stdout.write('{:.15e} {:.15e} {:d}\n'.format(result, error, randint(0, len(extents)/2 - 1)))
 		stdout.flush()
