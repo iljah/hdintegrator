@@ -5,7 +5,7 @@ Separate programs are used for evaluating integrals numerically and are provided
 These have their own prerequisites as detailed in INSTALL.
 
 The program main_mpi.py must be called using at least two MPI processes and must include a serial program to use as an integrand and the number of dimensions to integrate in:
-mpiexec -n 5 ./main_mpi.py --integrator integrators/N-sphere.py --dimensions 2
+mpiexec -n 5 ./main_mpi.py --integrator integrands/N-sphere.py --dimensions 2
 Calling the program with the --help argument will list available options and further usage instructions.
 The result consists of one line with the value, absolute error and fraction of volume in which the integrand failed to return a value.
 
