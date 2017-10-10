@@ -65,6 +65,16 @@ def split(cell, splits, dimensions, grid):
 			new_cells_to_split = []
 
 
+'''
+Used for transferring work between rank 0 and other ranks.
+
+\var volume List of pairs indicating minimum and maximum extent of integration volume in each dimension
+\var cell_id Unique id of a grid cell
+\var converged Whether result of integration converged
+\var value Value of integral
+\var error Estimate of absolute error for calculated integral
+\var split_dim Suggested dimension for splitting the volume in case result didn't converge
+'''
 class Work_Item:
 	def __init__(self):
 		self.volume = None
@@ -83,6 +93,9 @@ class Work_Item:
 	__repr__ = __str__
 
 
+'''
+Used by rank 0 to keep track of worker ranks.
+'''
 class Work_Tracker:
 	def __init__(self):
 		self.item = None
