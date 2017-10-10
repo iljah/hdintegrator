@@ -67,5 +67,8 @@ if __name__ == '__main__':
 		for i in range(2, len(instr), 2):
 			extents.append((float(instr[i - 1]), float(instr[i])))
 		result, error = nquad(integrand, extents)
-		stdout.write('{:.15e} {:.15e} {:d}\n'.format(result, error, randint(0, len(extents)/2 - 1)))
+		split_dim = 0
+		if len(extents) > 2:
+			split_dim = randint(0, int(len(extents)/2) - 1)
+		stdout.write('{:.15e} {:.15e} {:d}\n'.format(result, error, split_dim))
 		stdout.flush()
