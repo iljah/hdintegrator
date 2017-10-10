@@ -1,23 +1,39 @@
-High-Dimensional Integrator (HDIntegrator) is a program for parallel numerical integration of functions in arbitrary number of dimensions, see paper.md for a general overview.
+High-Dimensional Integrator (HDIntegrator) is a program for parallel numerical
+integration of functions in arbitrary number of dimensions, see paper.md for a
+general overview.
 
-Installation and testing is detailed in the INSTALL file but at least Python 3 and an implementation of Message Passing Interface is required along with mpi4py.
-Separate programs are used for evaluating integrals numerically and are provided in the integrands directory.
-These have their own prerequisites as detailed in INSTALL.
+Installation and testing is detailed in the INSTALL file but at least Python 3
+and an implementation of Message Passing Interface is required along with mpi4py.
+Separate programs are used for evaluating integrals numerically and are provided
+in the integrands directory. These have their own prerequisites as detailed in
+INSTALL file.
 
-The program main_mpi.py must be called using at least two MPI processes and must include a serial program to use as an integrand and the number of dimensions to integrate in:
+The program main_mpi.py must be called using at least two MPI processes and must
+include a serial program to use as an integrand and the number of dimensions to
+integrate in:
 mpiexec -n 5 ./main_mpi.py --integrator integrands/N-sphere.py --dimensions 2
-Calling the program with the --help argument will list available options and further usage instructions.
-The result consists of one line with the integral's value, absolute error and fraction of volume relative to total volume in which the integrand failed to return a value.
+Calling the program with the --help argument will list available options and
+further usage instructions. The result consists of one line with the integral's
+value, absolute error and fraction of volume relative to total volume in which
+the integrand failed to return a value.
 
-Communication between main_mpi.py and integrands is handled via standard input and output in ASCII format.
-Each line given to the integrand by main_mpi.py consists of floating point numbers separated by spaces:
+Communication between main_mpi.py and integrands is handled via standard input
+and output in ASCII format. Each line given to the integrand by main_mpi.py
+consists of floating point numbers separated by spaces:
 C a0 a1 b0 b1 c0 c1 ...
-where C is the number of samples to use for evaluating the integral and a0, a1, b0, etc. represent the minimum and maximum extent of the integration volume respectively.
-Note that the number of dimensions might change from one line to another, although that is not the case currently.
-Each line received from the integrand by main_mpi.py must consist of three floating point numbers separated by spaces in ASCII format:
+where C is the number of samples to use for evaluating the integral and a0, a1,
+b0, etc. represent the minimum and maximum extent of the integration volume
+respectively. Note that the number of dimensions might change from one line to
+another, although that is not the case currently. Each line received from the
+integrand by main_mpi.py must consist of three floating point numbers separated
+by spaces in ASCII format:
 V E S
-where V is the value of the integral, E is an estimate of the absolute integration error and S is the suggested dimension starting from 0 in which to split the integration volume in order to minimize subsequent integration errors.
+where V is the value of the integral, E is an estimate of the absolute
+integration error and S is the suggested dimension starting from 0 in which to
+split the integration volume in order to minimize subsequent integration errors.
 
-To seek support or report an issue in HDIntegrator please create a new issue at https://github.com/iljah/hdintegrator/issues
+To seek support or report an issue in HDIntegrator please create a new issue at
+https://github.com/iljah/hdintegrator/issues
 
-To contribute to HDIntegrator please create a new pull request at https://github.com/iljah/hdintegrator/pulls
+To contribute to HDIntegrator please create a new pull request at
+https://github.com/iljah/hdintegrator/pulls
