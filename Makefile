@@ -14,7 +14,7 @@ PROGRAMS=integrands/failing \
 
 all: $(PROGRAMS)
 
-COMP = g++ -std=c++17 -O3 -march=native -W -Wall -Wextra -Wpedantic $< -o $@
+COMP = g++ -std=c++14 -O3 -march=native -W -Wall -Wextra -Wpedantic $< -o $@
 
 integrands/failing: integrands/failing.cpp Makefile
 	$(COMP)

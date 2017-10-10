@@ -6,7 +6,7 @@ git clone --recursive https://github.com/iljah/hdintegrator.git
 when initially cloning the repository.
 The integrands located in integrands directory each have their own requirements and prerequisites.
 
-Integrands implemented in C++ require a C++ compiler and can be compiled automatically with GNU Make by using the Makefile located in this directory.
+Integrands implemented in C++ require a C++14 compiler and can be compiled automatically with GNU Make by using the Makefile located in this directory.
 These integrands also require one of the following libraries: GNU GSL, cubature.
 
 Integrands implemented in Python require the scipy package.
