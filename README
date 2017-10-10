@@ -1,6 +1,6 @@
 High-Dimensional Integrator (HDIntegrator) is a program for parallel numerical integration of functions in arbitrary number of dimensions, see paper.md for a general overview.
 
-Installation is detailed in the INSTALL file but at least Python 3 and an implementation of Message Passing Interface is required along with mpi4py.
+Installation and testing is detailed in the INSTALL file but at least Python 3 and an implementation of Message Passing Interface is required along with mpi4py.
 Separate programs are used for evaluating integrals numerically and are provided in the integrands directory.
 These have their own prerequisites as detailed in INSTALL.
 
