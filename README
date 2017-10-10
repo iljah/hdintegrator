@@ -7,7 +7,7 @@ These have their own prerequisites as detailed in INSTALL.
 The program main_mpi.py must be called using at least two MPI processes and must include a serial program to use as an integrand and the number of dimensions to integrate in:
 mpiexec -n 5 ./main_mpi.py --integrator integrands/N-sphere.py --dimensions 2
 Calling the program with the --help argument will list available options and further usage instructions.
-The result consists of one line with the value, absolute error and fraction of volume in which the integrand failed to return a value.
+The result consists of one line with the integral's value, absolute error and fraction of volume relative to total volume in which the integrand failed to return a value.
 
 Communication between main_mpi.py and integrands is handled via standard input and output in ASCII format.
 Each line given to the integrand by main_mpi.py consists of floating point numbers separated by spaces:
@@ -17,3 +17,7 @@ Note that the number of dimensions might change from one line to another, althou
 Each line received from the integrand by main_mpi.py must consist of three floating point numbers separated by spaces in ASCII format:
 V E S
 where V is the value of the integral, E is an estimate of the absolute integration error and S is the suggested dimension starting from 0 in which to split the integration volume in order to minimize subsequent integration errors.
+
+To seek support or report an issue in HDIntegrator please create a new issue at https://github.com/iljah/hdintegrator/issues
+
+To contribute to HDIntegrator please create a new pull request at https://github.com/iljah/hdintegrator/pulls
