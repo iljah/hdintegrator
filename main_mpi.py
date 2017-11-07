@@ -35,7 +35,8 @@ try:
 	from cell import cell
 	from ndgrid import ndgrid
 except Exception as e:
-	print("Couldn't import required submodule(s), did you clone them with:\n")
+	print("Couldn't import required submodule(s): ", e)
+	print("Did you remember to clone them along with hdintegrator by using:")
 	print('git clone --recursive https://github.com/iljah/hdintegrator.git')
 	exit(1)
 
