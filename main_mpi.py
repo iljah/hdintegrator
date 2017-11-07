@@ -22,14 +22,15 @@ import argparse
 from datetime import datetime, timedelta
 from math import isnan
 from os import rename
-from os.path import exists
+from os.path import dirname, exists, join, realpath
 from pickle import dump, load
 from random import choice, randint
 import shlex
 from subprocess import Popen, PIPE
-from sys import stdout
+from sys import path, stdout
 from time import sleep
 
+path.append(join(dirname(realpath(__file__)), 'submodules/ndgrid/source'))
 try:
 	from cell import cell
 	from ndgrid import ndgrid
@@ -45,7 +46,12 @@ except Exception as e:
 
 
 '''
-Splits given cell splits times in given dimensions.
+Splits a cell.
+
+\param cell Cell to split
+\param splits Number of times to split given cell, it's children, etc.
+\param dimensions List of dimensions in which to split
+\param grid Grid in which to split given cell.
 
 ID of child cell is parent id * 2 + (0 or 1).
 '''
@@ -65,6 +71,9 @@ def split(cell, splits, dimensions, grid):
 			new_cells_to_split = []
 
 
+'''
+
+'''
 class Work_Item:
 	def __init__(self):
 		self.volume = None
@@ -90,6 +99,13 @@ class Work_Tracker:
 		self.start_time = None
 
 
+'''
+Returns basic info about the calculated solution.
+
+\param grid Integration grid.
+
+\return Tuple with current integral's value, error, NaN volume, total volume, number of converged cells and total number of grid cells.
+'''
 def get_info(grid):
 	converged_cells = 0
 	# sum up final result
@@ -119,6 +135,13 @@ def get_info(grid):
 	return value, error, nan_vol, total_vol, converged_cells, len(cells)
 
 
+'''
+Prepares an integrand with Popen.
+
+\param args Result from parse_args() of argparse.ArgumentParser in __main__.
+
+\return Value returned by Popen.
+'''
 def prepare_integrator(args):
 	arg_list = [args.integrator]
 	if args.args != None:
