@@ -17,6 +17,10 @@ further usage instructions. The result consists of one line with the integral's
 value, absolute error and fraction of volume relative to total volume in which
 the integrand failed to return a value.
 
+To define your own integral you must write a program that will be called by
+main_mpi.py for evaluating the intergral within a given volume and give that
+program as an argument to main_mpi.py. For an example see e.g. the program in
+integrands/N-sphere.py which evaluates the integral for an N-dimensional sphere.
 Communication between main_mpi.py and integrands is handled via standard input
 and output in ASCII format. Each line given to the integrand by main_mpi.py
 consists of floating point numbers separated by spaces:
