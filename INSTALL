@@ -1,12 +1,15 @@
 Installation
 
-HDIntegrator requires Python 3, and mpi4py which itself requires an implementation of the Message Passing Interface standard such OpenMPI.
+HDIntegrator requires Python 3, and mpi4py which itself requires an
+implementation of the Message Passing Interface standard such OpenMPI.
 HDIntegrator depends on two git submodules which you can obtain with:
 git clone --recursive https://github.com/iljah/hdintegrator.git
 when initially cloning the repository.
-The integrands located in integrands directory each have their own requirements and prerequisites.
+The integrands located in integrands directory each have their own requirements
+and prerequisites.
 
-Integrands implemented in C++ require a C++14 compiler and can be compiled automatically with GNU Make by using the Makefile located in this directory.
+Integrands implemented in C++ require a C++14 compiler and can be compiled
+automatically with GNU Make by using the Makefile located in this directory.
 These integrands also require one of the following libraries: GNU GSL, cubature.
 
 Integrands implemented in Python require the scipy package.
@@ -14,18 +17,18 @@ Integrands implemented in Python require the scipy package.
 
 Testing
 
-Integrating the x >= 0 and y >= 0 quarter of a 2d unit sphere with SciPy-based python program:
+Integrating the x >= 0 and y >= 0 quarter of a 2d unit sphere with SciPy-based
+python program:
+mpiexec -n 2 ./main_mpi.py --integrator integrands/N-sphere.py --dimensions 1
 
-mpiexec -n 2 ./main_mpi.py --integrator integrators/N-sphere.py --dimensions 1
-
-should give a value of 0.785, error less than 0.001 and a NaN volume of 0, for example:
-
+should give a value of 0.785, error less than 0.001 and a NaN volume of 0, for
+example:
 0.7853981633974481 8.833911380179416e-11 0.0
 
 
 The same for 3d unit sphere:
 
-mpiexec -n 2 ./main_mpi.py --integrator integrators/N-sphere.py --dimensions 2
+mpiexec -n 2 ./main_mpi.py --integrator integrands/N-sphere.py --dimensions 2
 
 should give a value of 0.52, error less than 0.001 and NaN volume 0:
 
@@ -34,7 +37,7 @@ should give a value of 0.52, error less than 0.001 and NaN volume 0:
 
 Integrating a 15d unit sphere with GSL-based C++ program:
 
-mpiexec -n 2 ./main_mpi.py --integrator integrators/N-sphere --dimensions 15 --prerefine 200
+mpiexec -n 2 ./main_mpi.py --integrator integrands/N-sphere --dimensions 15 --prerefine 200
 
 should give a value of 3.6e-6, error < 1e-6 and NaN volume of 0:
 
