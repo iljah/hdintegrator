@@ -35,7 +35,7 @@ return a value.
 
 To define your own integral you must write a program that will be called by
 hdintegrator.py for evaluating that intergral within a given volume and give that
-program as an argument to hdintegrator.py. For an example see e.g. the program in
+program as an argument to hdintegrator.py. For an example see e.g. the integrand
 [integrands/N-sphere.py](integrands/N-sphere.py) which evaluates the integral for an N-dimensional sphere.
 Communication between hdintegrator.py and integrands is handled via standard input
 and output in ASCII format. Each line given to the integrand by hdintegrator.py
