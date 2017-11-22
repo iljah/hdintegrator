@@ -7,6 +7,11 @@ You can obtain HDIntegrator and its submodules by cloning the repository with:
 
     git clone --recursive https://github.com/iljah/hdintegrator.git
 
+after which you'll find the main program in `hdintegrator/hdintegrator.py` and
+all the integrands in `hdintegrator/integrands/`. It is also possible to install
+hdintegrator using `pip install hdintegrator` but due to technical reasons this
+method will only install integrands implemented in Python.
+
 
 ## Prerequisites
 
