@@ -17,13 +17,13 @@ have their own prerequisites as detailed in [INSTALL](INSTALL.md).
 # Usage
 
 To get a list of mandatory and optional arguments supported by the program run
-[main_mpi.py](main_mpi.py) with --help argument: `./main_mpi.py --help`.
+[hdintegrator.py](hdintegrator.py) with --help argument: `./hdintegrator.py --help`.
 
 In general the program must be run with at least two MPI processes and must
 include a serial program to use as an integrand as well as the number of
 dimensions to integrate in:
 
-    mpiexec -n 5 ./main_mpi.py --integrator integrands/N-sphere.py --dimensions 2
+    mpiexec -n 5 ./hdintegrator.py --integrator integrands/N-sphere.py --dimensions 2
 
 The result consists of one line with the integral's value, absolute error and
 fraction of volume relative to total volume in which the integrand failed to
@@ -33,11 +33,11 @@ return a value.
 # Input and output formats
 
 To define your own integral you must write a program that will be called by
-main_mpi.py for evaluating that intergral within a given volume and give that
-program as an argument to main_mpi.py. For an example see e.g. the program in
+hdintegrator.py for evaluating that intergral within a given volume and give that
+program as an argument to hdintegrator.py. For an example see e.g. the program in
 [integrands/N-sphere.py](integrands/N-sphere.py) which evaluates the integral for an N-dimensional sphere.
-Communication between main_mpi.py and integrands is handled via standard input
-and output in ASCII format. Each line given to the integrand by main_mpi.py
+Communication between hdintegrator.py and integrands is handled via standard input
+and output in ASCII format. Each line given to the integrand by hdintegrator.py
 consists of floating point numbers separated by spaces:
 
     C a0 a1 b0 b1 c0 c1 ...
@@ -46,7 +46,7 @@ where C is the number of samples to use for evaluating the integral and a0, a1,
 b0, etc. represent the minimum and maximum extent of the integration volume
 respectively. Note that the number of dimensions might change from one line to
 another, although that is not the case currently. Each line received from the
-integrand by main_mpi.py must consist of three floating point numbers separated
+integrand by hdintegrator.py must consist of three floating point numbers separated
 by spaces in ASCII format:
 
     V E S
