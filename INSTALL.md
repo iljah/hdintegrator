@@ -1,4 +1,4 @@
-Installation
+# Installation
 
 HDIntegrator requires Python 3, mpi4py which itself requires an
 implementation of the Message Passing Interface standard such as OpenMPI, and
@@ -13,7 +13,9 @@ python3-mpi4py in Ubuntu and in Fedora either python3-mpi4py-mpich or
 python3-mpi4py-openmpi depending on which OpenMPI implementation you are using.
 
 HDIntegrator depends on two git submodules which you can obtain with:
-git clone --recursive https://github.com/iljah/hdintegrator.git
+
+    git clone --recursive https://github.com/iljah/hdintegrator.git
+
 when initially cloning the repository. The integrands located in integrands
 directory each have their own requirements and prerequisites.
 
@@ -24,30 +26,32 @@ These integrands also require one of the following libraries: GNU GSL, cubature.
 Integrands implemented in Python require the scipy package.
 
 
-Testing
+# Testing
 
 Integrating the x >= 0 and y >= 0 quarter of a 2d unit sphere with SciPy-based
 python program:
-mpiexec -n 2 ./main_mpi.py --integrator integrands/N-sphere.py --dimensions 1
+
+    mpiexec -n 2 ./main_mpi.py --integrator integrands/N-sphere.py --dimensions 1
 
 should give a value of 0.785, error less than 0.001 and a NaN volume of 0, for
 example:
-0.7853981633974481 8.833911380179416e-11 0.0
+
+    0.7853981633974481 8.833911380179416e-11 0.0
 
 
 The same for 3d unit sphere:
 
-mpiexec -n 2 ./main_mpi.py --integrator integrands/N-sphere.py --dimensions 2
+    mpiexec -n 2 ./main_mpi.py --integrator integrands/N-sphere.py --dimensions 2
 
 should give a value of 0.52, error less than 0.001 and NaN volume 0:
 
-0.5235987763835492 1.453148457120079e-08 0.0
+    0.5235987763835492 1.453148457120079e-08 0.0
 
 
 Integrating a 15d unit sphere with GSL-based C++ program:
 
-mpiexec -n 2 ./main_mpi.py --integrator integrands/N-sphere --dimensions 15 --prerefine 200
+    mpiexec -n 2 ./main_mpi.py --integrator integrands/N-sphere --dimensions 15 --prerefine 200
 
 should give a value of 3.6e-6, error < 1e-6 and NaN volume of 0:
 
-3.6103624726239274e-06 2.263344140165195e-07 0.0
+    3.6103624726239274e-06 2.263344140165195e-07 0.0
