@@ -73,7 +73,7 @@ the MPIEXEC argument to make, for example `make test MPIEXEC=/path/to/mpirun`.
 Integrating the x >= 0 and y >= 0 quarter of a 2d unit sphere with SciPy-based
 python program:
 
-    mpiexec -n 2 ./hdintegrator.py --integrator integrands/N-sphere.py --dimensions 1
+    mpiexec -n 2 ./hdintegrator.py --integrand integrands/N-sphere.py --dimensions 1
 
 should give a value of 0.785, error less than 0.001 and a NaN volume of 0, for
 example:
@@ -83,7 +83,7 @@ example:
 
 The same for 3d unit sphere:
 
-    mpiexec -n 2 ./hdintegrator.py --integrator integrands/N-sphere.py --dimensions 2
+    mpiexec -n 2 ./hdintegrator.py --integrand integrands/N-sphere.py --dimensions 2
 
 should give a value of 0.52, error less than 0.001 and NaN volume 0:
 
@@ -92,7 +92,7 @@ should give a value of 0.52, error less than 0.001 and NaN volume 0:
 
 Integrating a 15d unit sphere with GSL-based C++ program:
 
-    mpiexec -n 2 ./hdintegrator.py --integrator integrands/N-sphere --dimensions 15 --prerefine 200
+    mpiexec -n 2 ./hdintegrator.py --integrand integrands/N-sphere --dimensions 15 --prerefine 200
 
 should give a value of 3.6e-6, error < 1e-6 and NaN volume of 0:
 

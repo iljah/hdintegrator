@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
 	name = 'hdintegrator',
-	version = '0.2',
+	version = '0.2.1',
 	classifiers = [
 		'Development Status :: 4 - Beta',
 		'Environment :: Console',
@@ -26,5 +26,5 @@ setup(
 	author = 'Ilja Honkonen',
 	author_email = 'ilja.honkonen@fmi.fi',
 	url = 'https://github.com/iljah/hdintegrator',
-	description = 'Reduced version of hdintegrator due to technical reasons, see url for full version'
+	description = 'High-Dimensional Integrator, see github.com/iljah/hdintegrator for full version'
 )

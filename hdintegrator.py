@@ -153,15 +153,15 @@ Prepares an integrand with Popen.
 
 \return Value returned by Popen.
 '''
-def prepare_integrator(args):
-	arg_list = [args.integrator]
+def prepare_integrand(args):
+	arg_list = [args.integrand]
 	if args.args != None:
 		arg_list += shlex.split(args.args)
-	integrator = Popen(arg_list, stdin = PIPE, stdout = PIPE, universal_newlines = True, bufsize = 1)
+	integrand = Popen(arg_list, stdin = PIPE, stdout = PIPE, universal_newlines = True, bufsize = 1)
 	if args.verbose:
-		print('Integrator initialized by rank', rank)
+		print('Integrand initialized by rank', rank)
 	stdout.flush()
-	return integrator
+	return integrand
 
 
 if __name__ == '__main__':
@@ -186,9 +186,9 @@ if __name__ == '__main__':
 		help = 'Print diagnostic information during integration'
 	)
 	parser.add_argument(
-		'--integrator',
+		'--integrand',
 		default = '',
-		help = 'Path to integrator program to use, relative to current working directory'
+		help = 'Path to integrand program to use, relative to current working directory'
 	)
 	parser.add_argument(
 		'--dimensions',
@@ -210,7 +210,7 @@ if __name__ == '__main__':
 	)
 	parser.add_argument(
 		'--args',
-		help = 'Arguments to pass to integrator program, given as one string (e.g. --args "-a b -c d") which are passed on to integrator after splitting with shlex.split'
+		help = 'Arguments to pass to integrand program, given as one string (e.g. --args "-a b -c d") which are passed on to integrand after splitting with shlex.split'
 	)
 	parser.add_argument(
 		'--prerefine',
@@ -223,7 +223,7 @@ if __name__ == '__main__':
 		'--calls',
 		type = float,
 		default = 1e6,
-		help = 'Request this number of calls to integrand from integrator'
+		help = 'Request this number of calls to integrand'
 	)
 	parser.add_argument(
 		'--timer',
@@ -312,8 +312,8 @@ if __name__ == '__main__':
 			print('Number of dimensions must be at least 1')
 		exit(1)
 
-	if not exists(args.integrator):
-		print('Integrator', args.integrator, "doesn't exist")
+	if not exists(args.integrand):
+		print('Integrand', args.integrand, "doesn't exist")
 		exit(1)
 
 
@@ -495,8 +495,7 @@ if __name__ == '__main__':
 
 	else: # if rank == 0
 
-		# prepare integrator program
-		integrator = prepare_integrator(args)
+		integrand = prepare_integrand(args)
 
 		# work loop
 		while True:
@@ -534,22 +533,22 @@ if __name__ == '__main__':
 				continue
 
 			try:
-				integrator.stdin.write(to_stdin + '\n')
-				integrator.stdin.flush()
+				integrand.stdin.write(to_stdin + '\n')
+				integrand.stdin.flush()
 			except Exception as e:
-				print('Rank', rank, 'request to integrator failed with input', to_stdin, ', error:', e)
-				integrator = prepare_integrator(args)
+				print('Rank', rank, 'request to integrand failed with input', to_stdin, ', error:', e)
+				integrand = prepare_integrand(args)
 				comm.send(obj = work_item, dest = 0, tag = 1)
 				continue
 
 			stdout.flush()
 
 			try:
-				answer = integrator.stdout.readline()
+				answer = integrand.stdout.readline()
 				value, error, split_dim = answer.strip().split()
 				work_item.value, work_item.error, work_item.split_dim = float(value), float(error), int(split_dim)
 			except Exception as e:
-				print('Rank', rank, 'call to integrator failed with result:', answer, ', returning NaN, input string:', to_stdin, ', exception:', e)
+				print('Rank', rank, 'call to integrand failed with result:', answer, ', returning NaN, input string:', to_stdin, ', exception:', e)
 				comm.send(obj = work_item, dest = 0, tag = 1)
 				continue
 
@@ -570,20 +569,20 @@ if __name__ == '__main__':
 				continue
 
 			try:
-				integrator.stdin.write(to_stdin + '\n')
-				integrator.stdin.flush()
+				integrand.stdin.write(to_stdin + '\n')
+				integrand.stdin.flush()
 			except Exception as e:
-				print('Rank', rank, 'request to integrator failed with input', to_stdin, ', error:', e)
-				integrator = prepare_integrator(args)
+				print('Rank', rank, 'request to integrand failed with input', to_stdin, ', error:', e)
+				integrand = prepare_integrand(args)
 				comm.send(obj = work_item, dest = 0, tag = 1)
 				continue
 
 			try:
-				answer = integrator.stdout.readline()
+				answer = integrand.stdout.readline()
 				new_value, new_error, new_split_dim = answer.strip().split()
 				new_value, new_error, new_split_dim = float(new_value), float(new_error), int(new_split_dim)
 			except Exception as e:
-				print('Rank', rank, 'call to integrator failed with result:', answer, ', returning NaN, input string:', to_stdin, ', exception:', e)
+				print('Rank', rank, 'call to integrand failed with result:', answer, ', returning NaN, input string:', to_stdin, ', exception:', e)
 				comm.send(obj = work_item, dest = 0, tag = 1)
 				continue
 
