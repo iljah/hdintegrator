@@ -10,7 +10,8 @@ You can obtain HDIntegrator and its submodules by cloning the repository with:
 after which you'll find the main program in `hdintegrator/hdintegrator.py` and
 all the integrands in `hdintegrator/integrands/`. It is also possible to install
 hdintegrator using `pip install hdintegrator` but due to technical reasons this
-method will only install integrands implemented in Python.
+method will only install integrands implemented in Python. See the local install
+section for further details.
 
 
 ## Prerequisites
@@ -67,6 +68,10 @@ and install prerequisites (also for the [N-sphere.py](integrands/N-sphere.py) in
     pip install networkx mpi4py scipy
 
 make sure that the OpenMPI wrapper compiler is in your PATH before running pip.
+If you didn't clone the repository you can install the program by running
+`pip install hdintegrator` which will put it into `~/hdintegrator_env/bin/`
+along with integrands implemented in Python. To download all integrands use `git`,
+see the integrands section for more info.
 
 
 # Testing
