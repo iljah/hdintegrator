@@ -24,11 +24,13 @@ In general the program must be run with at least two MPI processes and must
 include a serial program to use as an integrand as well as the number of
 dimensions to integrate in:
 
-    mpiexec -n 5 ./hdintegrator.py --integrator integrands/N-sphere.py --dimensions 2
+    mpiexec -n 5 ./hdintegrator.py --integrand integrands/N-sphere.py --dimensions 2
 
 The result consists of one line with the integral's value, absolute error and
 fraction of volume relative to total volume in which the integrand failed to
-return a value.
+return a value:
+
+    0.523598776383549 1.453150932917424e-08 0.0
 
 
 # Input and output formats
