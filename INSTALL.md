@@ -1,29 +1,67 @@
 # Installation
 
-HDIntegrator requires Python 3, mpi4py which itself requires an
-implementation of the Message Passing Interface standard such as OpenMPI, and
-the NetworkX package. These are all available for example in the Ubuntu
-and Fedora repositories and can be installed by following the respective
-distributions' documentation on installing additional software. Note that
-there might be separate packages for different versions of Python and/or the MPI
-implementation so be sure to install packages corresponding to the same
-combinations of Python/MPI. For example the correct NetworkX package is called
-python3-networkx in both Ubuntu and Fedora but the mpi4py package is called
-python3-mpi4py in Ubuntu and in Fedora either python3-mpi4py-mpich or
-python3-mpi4py-openmpi depending on which OpenMPI implementation you are using.
 
-HDIntegrator depends on two git submodules which you can obtain with:
+## Downloading the program
+
+You can obtain HDIntegrator and its submodules by cloning the repository with:
 
     git clone --recursive https://github.com/iljah/hdintegrator.git
 
-when initially cloning the repository. The integrands located in integrands
-directory each have their own requirements and prerequisites.
 
-Integrands implemented in C++ require a C++14 compiler and can be compiled
-automatically with GNU Make by using the Makefile located in this directory.
-These integrands also require one of the following libraries: GNU GSL, cubature.
+## Prerequisites
 
-Integrands implemented in Python require the scipy package.
+HDIntegrator requires **Python 3**, **NetworkX** and **mpi4py**, while mpi4py requires an
+implementation of the Message Passing Interface standard such as **OpenMPI**.
+
+
+### Integrands
+
+Integrands located in integrands directory each have their own requirements and
+prerequisites.
+
+Integrands implemented in Python require the **SciPy** package which is called
+python3-scipy in Fedora.
+
+Integrands implemented in C++ require a **C++14 compiler** and can be
+compiled automatically with **GNU Make** by using the Makefile located in this
+directory. These integrands also require one of the following libraries:
+**GNU GSL**, **cubature** available at [github.com/stevengj/cubature](https://github.com/stevengj/cubature).
+In Fedora the required GSL package is gsl-devel while in Ubuntu it is libgsl-dev.
+
+
+## System-wide installation
+
+Prerequisites are available for example in Fedora and Ubuntu repositories and
+can be installed by following the respective distributions' documentation on
+installing additional software. Note that there might be separate packages for
+different versions of Python and/or the MPI implementation so be sure to install
+packages corresponding to the same combinations of Python/MPI. For example the
+correct NetworkX package is called python3-networkx in both Ubuntu and Fedora
+but the mpi4py package is called python3-mpi4py in Ubuntu and in Fedora either
+python3-mpi4py-mpich or python3-mpi4py-openmpi depending on which OpenMPI
+implementation you are using.
+
+
+## Local installation
+
+You can install the required Python libraries under your home directory using
+[virtualenv](https://virtualenv.pypa.io) while OpenMPI can be obtained from
+[https://www.open-mpi.org](https://www.open-mpi.org). You should install OpenMPI
+before installing mpi4py.
+
+Create a new python environment with virtualenv:
+
+    virtualenv --python=python3 ~/hdintegrator_env
+
+Switch to that environment:
+
+    . ~/hdintegrator_env/bin/activate
+
+and install prerequisites (also for the [N-sphere.py](integrands/N-sphere.py) integrand):
+
+    pip install networkx mpi4py scipy
+
+make sure that the OpenMPI wrapper compiler is in your PATH before running pip.
 
 
 # Testing
