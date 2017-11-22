@@ -61,7 +61,7 @@ integrands/turbulence4: integrands/turbulence4.cpp Makefile
 
 c: clean
 clean:
-	rm -f $(PROGRAMS)
+	rm -f $(PROGRAMS) tests/*out tests/*ok
 
 t: test
 test: tests/2d_ok tests/3d_ok
