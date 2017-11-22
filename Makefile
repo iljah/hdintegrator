@@ -1,3 +1,7 @@
+MPIEXEC=mpiexec
+DIFF=diff
+TOUCH=touch
+
 PROGRAMS=integrands/failing \
 	integrands/maybe_failing \
 	integrands/hanging \
@@ -58,3 +62,14 @@ integrands/turbulence4: integrands/turbulence4.cpp Makefile
 c: clean
 clean:
 	rm -f $(PROGRAMS)
+
+t: test
+test: tests/2d_ok tests/3d_ok
+
+tests/2d_ok: hdintegrator.py integrands/N-sphere.py Makefile
+	@printf 'TEST N-sphere.py 2d... ' && $(MPIEXEC) -n 2 ./hdintegrator.py --integrator integrands/N-sphere.py --dimensions 1 > tests/2d_out
+	@$(DIFF) -q tests/2d_ref tests/2d_out && $(TOUCH) tests/2d_ok && echo PASSED
+
+tests/3d_ok: hdintegrator.py integrands/N-sphere.py Makefile
+	@printf 'TEST N-sphere.py 3d... ' && $(MPIEXEC) -n 2 ./hdintegrator.py --integrator integrands/N-sphere.py --dimensions 2 > tests/3d_out
+	@$(DIFF) -q tests/3d_ref tests/3d_out && $(TOUCH) tests/3d_ok && echo PASSED
