@@ -66,6 +66,10 @@ make sure that the OpenMPI wrapper compiler is in your PATH before running pip.
 
 # Testing
 
+The first two tests below can be executed by running `make test`. You can
+specify a different executable for running the integrator in parallel by giving
+the MPIEXEC argument to make, for example `make test MPIEXEC=/path/to/mpirun`.
+
 Integrating the x >= 0 and y >= 0 quarter of a 2d unit sphere with SciPy-based
 python program:
 
