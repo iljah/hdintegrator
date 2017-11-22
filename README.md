@@ -17,7 +17,8 @@ have their own prerequisites as detailed in [INSTALL](INSTALL.md).
 # Usage
 
 To get a list of mandatory and optional arguments supported by the program run
-[hdintegrator.py](hdintegrator.py) with --help argument: `./hdintegrator.py --help`.
+[hdintegrator.py](hdintegrator.py) with --help argument: `./hdintegrator.py --help`
+(or `hdintegrator.py --help` if you installed it through `pip`).
 
 In general the program must be run with at least two MPI processes and must
 include a serial program to use as an integrand as well as the number of
