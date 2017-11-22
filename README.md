@@ -1,8 +1,9 @@
 # HDIntegrator
 
-High-Dimensional Integrator (HDIntegrator) is a program for parallel numerical
-integration of functions in arbitrary number of dimensions, see [paper.md](paper.md) for a
-general overview.
+High-Dimensional Integrator (HDIntegrator) is a program for parallel [numerical
+integration](https://en.wikipedia.org/wiki/Numerical_integration) of functions
+in arbitrary number of dimensions, see [paper.md](paper.md) for a general
+overview.
 
 
 # Installation
