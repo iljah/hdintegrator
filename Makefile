@@ -49,18 +49,6 @@ integrands/burgers_miser: integrands/burgers.cpp integrands/gsl/miser2.c Makefil
 integrands/burgers_vegas: integrands/burgers.cpp Makefile
 	$(COMP) integrands/gsl/vegas2.c -DMETHOD=3 -I integrands/gsl -lgsl -lgslcblas -lboost_program_options
 
-integrands/turbulence3_hcubature: integrands/turbulence3.cpp Makefile
-	$(COMP) -lhcubature -lboost_program_options
-
-integrands/turbulence3_pcubature: integrands/turbulence3.cpp Makefile
-	$(COMP) -DPCUBATURE -lpcubature -lboost_program_options
-
-integrands/turbulence3_hcubature_v: integrands/turbulence3.cpp Makefile
-	$(COMP) -DVECTORIZE -lhcubature -lboost_program_options
-
-integrands/turbulence3_pcubature_v: integrands/turbulence3.cpp Makefile
-	$(COMP) -DVECTORIZE -DPCUBATURE -lpcubature -lboost_program_options
-
 c: clean
 clean:
 	rm -f $(PROGRAMS) tests/*out tests/*ok
