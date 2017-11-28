@@ -12,12 +12,12 @@ to technical reasons only integrands implemented in Python will be available.
 The above command will install necessary prerequisites for the main program, and
 the Python integrands, under your home directory.
 
-To take advantage of integrands implemented in C++ you'll have to clone the
-repository:
+To use integrands implemented in C++, for higher performance or different algorithms,
+you'll have to clone the repository:
 
     git clone --recursive https://github.com/iljah/hdintegrator.git
 
-after which you'll find the main program in `hdintegrator/hdintegrator.py` and
+after which the the main program will be in `hdintegrator/hdintegrator.py` and
 all the integrands in `hdintegrator/integrands/`. See the Integrands section
 for details.
 
