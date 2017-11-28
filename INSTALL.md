@@ -33,6 +33,12 @@ compiled automatically with **GNU Make** by using the Makefile located in this
 directory. These integrands also require one of the following libraries:
 **GNU GSL**, **cubature** available at [github.com/stevengj/cubature](https://github.com/stevengj/cubature).
 In Fedora the required GSL package is gsl-devel while in Ubuntu it is libgsl-dev.
+Compilation parameters can be customized by invoking `make` with the desired
+parameter and value separated by `=`:
+
+    make CXXFLAGS=-std=c++14
+
+See top of `Makefile` for list of parameters used.
 
 
 ## System-wide installation

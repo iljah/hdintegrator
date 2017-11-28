@@ -1,8 +1,8 @@
-PYTHON = python
-MPIEXEC = mpiexec
-DIFF = diff
-TOUCH = touch
-CXX = c++
+PYTHON ?= python
+MPIEXEC ?= mpiexec
+DIFF ?= diff
+TOUCH ?= touch
+CXX ?= c++
 CPPFLAGS ?=
 CXXFLAGS ?= -std=c++14 -O3 -march=native -W -Wall -Wextra -Wpedantic
 LDFLAGS ?=
