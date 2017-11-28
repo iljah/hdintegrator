@@ -3,42 +3,29 @@
 
 ## Downloading the program
 
-You can obtain HDIntegrator and its submodules by cloning the repository with:
+Easiest way to obtain HDIntegrator is with [pip](https://pip.pypa.io):
+
+    `pip install hdintegrator`
+
+after setting up the environment as described in section *Local installation*. Due
+to technical reasons only integrands implemented in Python will be available.
+The above command will install necessary prerequisites for the main program, and
+the Python integrands, under your home directory.
+
+To take advantage of integrands implemented in C++ you'll have to clone the
+repository:
 
     git clone --recursive https://github.com/iljah/hdintegrator.git
 
 after which you'll find the main program in `hdintegrator/hdintegrator.py` and
-all the integrands in `hdintegrator/integrands/`. It is also possible to install
-hdintegrator using `pip install hdintegrator` but due to technical reasons this
-method will only install integrands implemented in Python. See the local install
-section for further details.
+all the integrands in `hdintegrator/integrands/`. See the Integrands section
+for details.
 
 
 ## Prerequisites
 
 HDIntegrator requires **Python 3**, **NetworkX** and **mpi4py**, while mpi4py requires an
 implementation of the Message Passing Interface standard such as **OpenMPI**.
-
-
-### Integrands
-
-Integrands located in integrands directory each have their own requirements and
-prerequisites.
-
-Integrands implemented in Python require the **SciPy** package which is called
-python3-scipy in Fedora.
-
-Integrands implemented in C++ require a **C++14 compiler** and can be
-compiled automatically with **GNU Make** by using the Makefile located in this
-directory. These integrands also require one of the following libraries:
-**GNU GSL**, **cubature** available at [github.com/stevengj/cubature](https://github.com/stevengj/cubature).
-In Fedora the required GSL package is gsl-devel while in Ubuntu it is libgsl-dev.
-Compilation parameters can be customized by invoking `make` with the desired
-parameter and value separated by `=`:
-
-    make CXXFLAGS=-std=c++14
-
-See top of `Makefile` for list of parameters used.
 
 
 ## System-wide installation
@@ -59,25 +46,49 @@ implementation you are using.
 You can install the required Python libraries under your home directory using
 [virtualenv](https://virtualenv.pypa.io) while OpenMPI can be obtained from
 [https://www.open-mpi.org](https://www.open-mpi.org). You should install OpenMPI
-before installing mpi4py.
+before installing HDIntegrator.
 
 Create a new python environment with virtualenv:
 
     virtualenv --python=python3 ~/hdintegrator_env
 
-Switch to that environment:
+switch to that environment:
 
     . ~/hdintegrator_env/bin/activate
 
-and install prerequisites (also for the [N-sphere.py](integrands/N-sphere.py) integrand):
+and install HDIntegrator and its prerequisites:
 
-    pip install networkx mpi4py scipy
+    pip install hdintegrator
 
-make sure that the OpenMPI wrapper compiler is in your PATH before running pip.
-If you didn't clone the repository you can install the program by running
-`pip install hdintegrator` which will put it into `~/hdintegrator_env/bin/`
-along with integrands implemented in Python. To download all integrands use `git`,
-see the integrands section for more info.
+make sure that the OpenMPI wrapper compiler is in your PATH before running `pip`
+so that the `mpiexec` binary from OpenMPI will be found. The main program and
+Python integrands will be located in `~/hdintegrator_env/bin` and can be used
+for example as:
+
+    mpiexec -n 2 ~/hdintegrator_env/bin/hdintegrator.py --integrand ~/hdintegrator_env/bin/N-sphere.py --dimensions 1
+
+You can leave the virtualenv environment with `deactivate`.
+
+
+## Integrands
+
+Integrands located in `integrands` directory in the git repository each have
+their own requirements and prerequisites.
+
+Integrands implemented in Python require the **SciPy** package which is called
+python3-scipy in Fedora and is installed automatically if you used `pip` to
+install HDIntegrator as described in section *Local installation*.
+
+Integrands implemented in C++ require a **C++14 compiler** and can be
+compiled automatically with **GNU Make** by using the Makefile located in this
+directory. These integrands also require [GSL](https://www.gnu.org/software/gsl/).
+In Fedora it is called gsl-devel while in Ubuntu it is libgsl-dev.
+Compilation parameters can be customized by invoking `make` with the desired
+parameter and value separated by `=`:
+
+    make CXXFLAGS=-std=c++14
+
+See top of `Makefile` for list of parameters used.
 
 
 # Testing
