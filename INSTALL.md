@@ -81,8 +81,10 @@ install HDIntegrator as described in section *Local installation*.
 
 Integrands implemented in C++ require a **C++14 compiler** and can be
 compiled automatically with **GNU Make** by using the Makefile located in this
-directory. These integrands also require [GSL](https://www.gnu.org/software/gsl/).
-In Fedora it is called gsl-devel while in Ubuntu it is libgsl-dev.
+directory. These integrands also require [GSL](https://www.gnu.org/software/gsl/)
+and the *program options* part of [boost](http://www.boost.org/) libraries
+which can be installed in Fedora by installing *gsl-devel* and *boost-devel*
+and in Ubuntu by installing *libgsl-dev* and *libboost-program-options-dev*.
 Compilation parameters can be customized by invoking `make` with the desired
 parameter and value separated by `=`:
 
