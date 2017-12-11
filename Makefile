@@ -1,3 +1,5 @@
+# customize the following to suite your environment
+# by calling e.g. make PYTHON=python3 CXX=CC, etc.
 PYTHON ?= python
 MPIEXEC ?= mpiexec
 DIFF ?= diff
@@ -6,6 +8,12 @@ CXX ?= c++
 CPPFLAGS ?=
 CXXFLAGS ?= -std=c++14 -O3 -march=native -W -Wall -Wextra -Wpedantic
 LDFLAGS ?=
+BOOST_CPPFLAGS ?=
+BOOST_CXXFLAGS ?=
+BOOST_LDFLAGS ?= -lboost_program_options
+GSL_CPPFLAGS ?=
+GSL_CXXFLAGS ?=
+GSL_LDFLAGS ?= -lgsl -lgslcblas
 
 PROGRAMS=integrands/failing \
 	integrands/maybe_failing \
@@ -14,15 +22,12 @@ PROGRAMS=integrands/failing \
 	integrands/N-sphere \
 	integrands/burgers_plain \
 	integrands/burgers_miser \
-	integrands/burgers_vegas \
-	integrands/turbulence3_hcubature \
-	integrands/turbulence3_pcubature \
-	integrands/turbulence3_hcubature_v \
-	integrands/turbulence3_pcubature_v \
-	integrands/turbulence4
+	integrands/burgers_vegas
 
 all: $(PROGRAMS)
 
+BOOST_FLAGS = $(BOOST_CPPFLAGS) $(BOOST_CXXFLAGS) $(BOOST_LDFLAGS)
+GSL_FLAGS = $(GSL_CPPFLAGS) $(GSL_CXXFLAGS) $(GSL_LDFLAGS)
 COMP = $(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $< -o $@
 
 integrands/failing: integrands/failing.cpp Makefile
@@ -38,16 +43,16 @@ integrands/maybe_hanging: integrands/maybe_hanging.cpp Makefile
 	$(COMP)
 
 integrands/N-sphere: integrands/N-sphere.cpp Makefile
-	$(COMP) integrands/gsl/plain2.c -I integrands/gsl -lgsl -lgslcblas
+	$(COMP) integrands/gsl/plain2.c -I integrands/gsl $(GSL_FLAGS)
 
 integrands/burgers_plain: integrands/burgers.cpp integrands/gsl/plain2.c Makefile
-	$(COMP) integrands/gsl/plain2.c -DMETHOD=1 -I integrands/gsl -lgsl -lgslcblas -lboost_program_options
+	$(COMP) integrands/gsl/plain2.c -DMETHOD=1 -I integrands/gsl $(GSL_FLAGS) $(BOOST_FLAGS)
 
 integrands/burgers_miser: integrands/burgers.cpp integrands/gsl/miser2.c Makefile
-	$(COMP) integrands/gsl/miser2.c -DMETHOD=2 -I integrands/gsl -lgsl -lgslcblas -lboost_program_options
+	$(COMP) integrands/gsl/miser2.c -DMETHOD=2 -I integrands/gsl $(GSL_FLAGS) $(BOOST_FLAGS)
 
 integrands/burgers_vegas: integrands/burgers.cpp Makefile
-	$(COMP) integrands/gsl/vegas2.c -DMETHOD=3 -I integrands/gsl -lgsl -lgslcblas -lboost_program_options
+	$(COMP) integrands/gsl/vegas2.c -DMETHOD=3 -I integrands/gsl $(GSL_FLAGS) $(BOOST_FLAGS)
 
 c: clean
 clean:
