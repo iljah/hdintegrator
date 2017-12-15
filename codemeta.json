@@ -19,5 +19,5 @@
   "keywords": "software, numerical integration, arbitrary number of dimensions",
   "license": "GPL-3.0",
   "title": "hdintegrator",
-  "version": "v0.1"
+  "version": "1.0"
 }
