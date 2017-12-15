@@ -5,6 +5,7 @@ integration](https://en.wikipedia.org/wiki/Numerical_integration) of functions
 in arbitrary number of dimensions, see [paper.md](paper.md) for a general
 overview.
 
+[![DOI](http://joss.theoj.org/papers/10.21105/joss.00437/status.svg)](https://doi.org/10.21105/joss.00437)
 
 # Installation
 
