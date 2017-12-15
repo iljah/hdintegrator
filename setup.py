@@ -4,9 +4,9 @@ from setuptools import setup
 
 setup(
 	name = 'hdintegrator',
-	version = '0.2.1',
+	version = '1.0.1',
 	classifiers = [
-		'Development Status :: 4 - Beta',
+		'Development Status :: 5 - Production/Stable',
 		'Environment :: Console',
 		'Intended Audience :: Science/Research',
 		'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
