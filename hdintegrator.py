@@ -118,10 +118,12 @@ Returns basic info about the calculated solution.
 \return Tuple with current integral's value, error, NaN volume, total volume, number of converged cells and total number of grid cells.
 '''
 def get_info(grid):
-	converged_cells = 0
+	converged_cells = grid.graph.graph['nr-cells']
 	# sum up final result
-	total_vol, nan_vol = 0.0, 0.0
-	value, error = 0.0, 0.0
+	nan_vol = grid.graph.graph['nan-volume']
+	total_vol = nan_vol + grid.graph.graph['converged-volume']
+	value = grid.graph.graph['value']
+	error = grid.graph.graph['error']
 
 	cells = grid.get_cells()
 	for c in cells:
@@ -143,7 +145,7 @@ def get_info(grid):
 		if c.data['error'] != None and not isnan(c.data['error']):
 			error += c.data['error']
 
-	return value, error, nan_vol, total_vol, converged_cells, len(cells)
+	return value, error, nan_vol, total_vol, converged_cells, len(cells) + grid.graph.graph['nr-cells']
 
 
 '''
@@ -351,6 +353,12 @@ if __name__ == '__main__':
 			for i in dimensions:
 				c.set_extent(i, args.min_extent, args.max_extent)
 			grid = ndgrid(c)
+			# remove converged cells to conserve memory, track final result with these
+			grid.graph.graph['converged-volume'] = 0.0
+			grid.graph.graph['nan-volume'] = 0.0
+			grid.graph.graph['value'] = 0.0
+			grid.graph.graph['error'] = 0.0
+			grid.graph.graph['nr-cells'] = 0
 
 			for i in range(args.prerefine):
 				split(choice(grid.get_cells()), 1, [randint(0, len(dimensions) - 1)], grid)
@@ -455,6 +463,9 @@ if __name__ == '__main__':
 									print('Worker', proc + 1, 'failed')
 									stdout.flush()
 									work_trackers[proc].processing = None
+									c.data['converged'] = False
+									c.data['value'] = None
+									c.data['error'] = None
 									break
 								c.data['value'] = work_trackers[proc].item.value
 								c.data['error'] = work_trackers[proc].item.error
@@ -465,6 +476,20 @@ if __name__ == '__main__':
 										stdout.flush()
 									split(c, 1, [split_dim], grid)
 									work_left += 2
+								else:
+									grid.graph.graph['nr-cells'] += 1
+									vol = 1.0
+									extents = c.get_extents()
+									for extent in extents:
+										vol *= extents[extent][1] - extents[extent][0]
+									if isnan(c.data['value']):
+										grid.graph.graph['nan-volume'] += vol
+									else:
+										grid.graph.graph['converged-volume'] += vol
+										grid.graph.graph['value'] += c.data['value']
+									if not isnan(c.data['error']):
+										grid.graph.graph['error'] += c.data['error']
+									grid.remove(c)
 								break
 
 					# if result not ready
